@@ -1,0 +1,82 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-50: #f0f9ff;
+  --color-brand-100: #e0f2fe;
+  --color-brand-200: #bae6fd;
+  --color-brand-300: #7dd3fc;
+  --color-brand-400: #38bdf8;
+  --color-brand-500: #0ea5e9;
+  --color-brand-600: #0284c7;
+  --color-brand-700: #0369a1;
+  --color-brand-800: #075985;
+  --color-brand-900: #0c4a6e;
+  --color-brand-950: #082f49;
+
+  --color-navy-800: #13233a;
+  --color-navy-850: #0f1c2e;
+  --color-navy-900: #0b1626;
+  --color-navy-950: #060d17;
+
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-serif: 'Newsreader', Georgia, Cambria, 'Times New Roman', serif;
+  --font-mono: 'JetBrains Mono', Menlo, Monaco, Consolas, monospace;
+
+  --shadow-subtle: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
+  --shadow-card: 0 4px 12px 0 rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --shadow-float: 0 12px 30px -4px rgba(11, 22, 38, 0.12), 0 4px 12px -2px rgba(11, 22, 38, 0.08);
+  --shadow-modal: 0 25px 50px -12px rgba(6, 13, 23, 0.25);
+}
+
+:root {
+  --color-bg: #fbfbf9;
+  --color-surface: #ffffff;
+  --color-panel: #f4f5f1;
+  --color-border: #e2e5dc;
+  --color-dark-border: #cbd0c3;
+  --color-navy: #0b1626;
+  --color-teal: #0f766e;
+  --color-amber: #d97706;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: #1a202c;
+}
+
+/* Accessible focus ring */
+*:focus-visible {
+  outline: 2px solid #0f766e;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Custom subtle scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Print styles for Accessibility Audit Report */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+}
