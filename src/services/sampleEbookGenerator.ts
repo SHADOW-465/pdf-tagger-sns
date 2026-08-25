@@ -1,6 +1,7 @@
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import type { EbookDocument, PdfElement, PdfMetadata } from '../types/pdf';
 import { evaluateAccessibility } from './accessibilityValidator';
+import { getPdfDocument } from './pdfJsCache';
 
 export async function createDemoPdfDocument(): Promise<EbookDocument> {
   const pdfDoc = await PDFDocument.create();
@@ -467,6 +468,11 @@ export async function createDemoPdfDocument(): Promise<EbookDocument> {
   const pdfBytes = await pdfDoc.save();
   const pdfBlob = new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' });
   const pdfDataUrl = URL.createObjectURL(pdfBlob);
+  const pdfArrayBuffer = pdfBytes.buffer.slice(
+    pdfBytes.byteOffset,
+    pdfBytes.byteOffset + pdfBytes.byteLength
+  ) as ArrayBuffer;
+  void getPdfDocument('demo-ebook-01', pdfArrayBuffer);
 
   // Define structured elements for all pages
   const elements: PdfElement[] = [
@@ -789,7 +795,7 @@ export async function createDemoPdfDocument(): Promise<EbookDocument> {
     fileSize: pdfBytes.byteLength,
     pageCount: 3,
     pdfDataUrl,
-    pdfArrayBuffer: pdfBytes.buffer.slice(pdfBytes.byteOffset, pdfBytes.byteOffset + pdfBytes.byteLength) as ArrayBuffer,
+    pdfArrayBuffer,
     metadata,
     elements,
     validationReport,

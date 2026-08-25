@@ -2,6 +2,7 @@ import * as pdfjsLib from 'pdfjs-dist';
 import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import type { BoundingBox, EbookDocument, PdfElement, PdfMetadata, PdfTagType } from '../types/pdf';
 import { evaluateAccessibility } from './accessibilityValidator';
+import { primePdfDocument } from './pdfJsCache';
 
 // Set up PDF.js local bundled worker
 if (typeof window !== 'undefined') {
@@ -10,6 +11,27 @@ if (typeof window !== 'undefined') {
 
 export interface ParseProgressCallback {
   (step: string, percent: number, details?: string): void;
+}
+
+function headingTagForSize(size: number, map: Map<number, PdfTagType>): PdfTagType | undefined {
+  const direct = map.get(size);
+  if (direct) return direct;
+  for (const [sz, mapped] of map) {
+    if (Math.abs(sz - size) < 1) return mapped;
+  }
+  return undefined;
+}
+
+function isHeadingShaped(text: string, isBold: boolean): boolean {
+  const t = text.trim();
+  const words = t.split(/\s+/).filter(Boolean).length;
+  if (words === 0) return false;
+  const numbered = /^(\d+(\.\d+)+|[IVX]+\.|Chapter\s+\d+|Part\s+[IVX0-9]+|Section\s+\d+)/i.test(t);
+  const sentenceRun = /[.!?]\s+[A-Z]/.test(t);
+  if (numbered && words <= 28) return true;
+  if (words <= 14 && !sentenceRun) return true;
+  if (isBold && words <= 20 && !/[.!?]$/.test(t)) return true;
+  return false;
 }
 
 export interface DocumentTypographicProfile {
@@ -94,9 +116,18 @@ function buildTypographicProfile(
   const headingTierMap = new Map<number, PdfTagType>();
   const headingTags: PdfTagType[] = ['H1', 'H2', 'H3', 'H4', 'H5', 'H6'];
 
-  headingSizesDescending.forEach((tierSize, index) => {
-    const assignedTag = headingTags[Math.min(index, headingTags.length - 1)];
-    // Map any size within 1pt of this tier to the assigned tag
+  const totalChars = Array.from(fontSizeCharCounts.values()).reduce((a, b) => a + b, 0) || 1;
+
+  let headingIndex = 0;
+  headingSizesDescending.forEach((tierSize) => {
+    const tierChars = Array.from(fontSizeCharCounts.entries())
+      .filter(([sz]) => Math.abs(sz - tierSize) < 1.0)
+      .reduce((sum, [, n]) => sum + n, 0);
+    // A "larger" size that still carries a large share of the document is a body variant, not a heading.
+    if (tierChars / totalChars > 0.18) return;
+
+    const assignedTag = headingTags[Math.min(headingIndex, headingTags.length - 1)];
+    headingIndex += 1;
     allSizes.forEach((sz) => {
       if (Math.abs(sz - tierSize) < 1.0) {
         headingTierMap.set(sz, assignedTag);
@@ -273,10 +304,10 @@ export async function parsePdfFile(
         confidence = 0.98;
         isDecorative = true;
       }
-      // 2. Check if the block's font size matches an ordered heading tier (H1, H2, H3, etc.)
-      else if (typoProfile.headingTierMap.has(blockMaxFontSize)) {
-        const assignedHeading = typoProfile.headingTierMap.get(blockMaxFontSize)!;
-        tag = assignedHeading;
+      // 2. Heading tiers are relative to body size, but only heading-shaped lines become H1–H6.
+      // Long large-type paragraphs stay P so 14pt body copy is never tagged as a heading.
+      else if (isHeadingShaped(combinedText, blockIsBold) && headingTagForSize(blockMaxFontSize, typoProfile.headingTierMap)) {
+        tag = headingTagForSize(blockMaxFontSize, typoProfile.headingTierMap)!;
         confidence = 0.95;
       }
       // 3. If font size is at or near body size but has strong heading characteristics
@@ -403,9 +434,11 @@ export async function parsePdfFile(
 
   const pdfBlob = new Blob([new Uint8Array(arrayBuffer.slice(0))], { type: 'application/pdf' });
   const pdfDataUrl = URL.createObjectURL(pdfBlob);
+  const docId = `doc-${Date.now()}`;
+  primePdfDocument(docId, arrayBuffer, pdfDoc);
 
   return {
-    id: `doc-${Date.now()}`,
+    id: docId,
     fileName,
     fileSize,
     pageCount: numPages,

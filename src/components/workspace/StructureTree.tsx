@@ -282,9 +282,9 @@ export const StructureTree: React.FC<StructureTreeProps> = ({
               <button
                 key={filter}
                 onClick={() => setTagFilter(filter)}
-                className={`px-2 py-0.5 rounded text-[10px] font-mono transition-all ${
+                className={`px-2.5 py-0.5 rounded-full text-[10px] font-medium ${
                   isActive
-                    ? 'bg-teal-700 text-white font-semibold shadow-xs'
+                    ? 'bg-teal-700 text-white'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
@@ -317,12 +317,12 @@ export const StructureTree: React.FC<StructureTreeProps> = ({
               <div
                 key={el.id}
                 onClick={() => onSelectElement(el.id)}
-                className={`group flex items-start gap-2 p-2 rounded-xl text-xs cursor-pointer border transition-all ${
+                className={`group flex items-start gap-2 px-2.5 py-2 text-xs cursor-pointer rounded-xl border ${
                   isSpoken
-                    ? 'bg-amber-50 border-amber-500 text-amber-950 font-medium shadow-sm ring-2 ring-amber-400'
+                    ? 'bg-amber-50 border-amber-300 text-amber-950'
                     : isSelected
-                    ? 'bg-teal-50/90 border-teal-500 text-teal-950 font-medium shadow-sm ring-1 ring-teal-400'
-                    : 'bg-white border-slate-200/90 hover:border-teal-300 hover:bg-slate-50 text-slate-800'
+                    ? 'bg-teal-50 border-teal-300 text-teal-950'
+                    : 'bg-white border-slate-100 hover:border-slate-200 hover:bg-slate-50 text-slate-800'
                 }`}
               >
                 {/* Reading Order Index Badge */}
@@ -404,7 +404,7 @@ export const StructureTree: React.FC<StructureTreeProps> = ({
                   {/* Read aloud audition button */}
                   <button
                     onClick={(e) => handleAuditionNode(el.id, e)}
-                    className="p-1 rounded text-slate-400 hover:text-teal-700 hover:bg-teal-50 transition-colors opacity-0 group-hover:opacity-100"
+                    className="p-1 text-slate-600 hover:text-teal-900 opacity-0 group-hover:opacity-100"
                     title="Audition speech synthesis for this node"
                   >
                     <Volume2 className="w-3.5 h-3.5" />
@@ -433,7 +433,7 @@ export const StructureTree: React.FC<StructureTreeProps> = ({
       <div className="p-2.5 bg-white border-t border-slate-200 shrink-0">
         <button
           onClick={onBulkArtifactHeaders}
-          className="w-full py-1.5 px-2.5 rounded-lg bg-slate-100 hover:bg-teal-50 hover:text-teal-900 text-slate-700 text-[11px] font-medium border border-slate-200 transition-colors flex items-center justify-center gap-1.5 shadow-xs"
+          className="w-full py-1.5 px-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-800 text-[11px] font-medium border border-slate-200 flex items-center justify-center gap-1.5"
           title="Auto-convert detected running headers, footers, and page numbers to Artifacts"
         >
           <Sparkles className="w-3.5 h-3.5 text-teal-600" />

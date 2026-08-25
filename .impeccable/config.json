@@ -1,0 +1,23 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "inter",
+        "createdAt": "2026-08-25T06:36:37.659Z",
+        "reason": "DESIGN.md pins Inter as the UI sans stack for the editorial workstation"
+      },
+      {
+        "rule": "gradient-text",
+        "value": "*",
+        "files": [
+          "src/components/screens/LandingScreen.tsx"
+        ],
+        "createdAt": "2026-08-25T06:47:11.712Z",
+        "reason": "User asked to restore the previous landing design, including the teal gradient headline accent"
+      }
+    ]
+  }
+}

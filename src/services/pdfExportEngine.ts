@@ -1,6 +1,41 @@
-import { PDFDocument, PDFName, PDFString } from 'pdf-lib';
+import { 
+  PDFDocument, 
+  PDFName, 
+  PDFString, 
+  PDFNumber, 
+  PDFArray, 
+  StandardFonts 
+} from 'pdf-lib';
 import type { EbookDocument } from '../types/pdf';
 
+/**
+ * Escapes plain text for inclusion in PDF literal string operators: (text) Tj
+ */
+function escapePdfText(text: string): string {
+  if (!text) return '';
+  return text
+    .replace(/\\/g, '\\\\')
+    .replace(/\(/g, '\\(')
+    .replace(/\)/g, '\\)')
+    .replace(/[\r\n\t]+/g, ' ')
+    .replace(/[\x00-\x1F\x7F-\x9F]/g, '');
+}
+
+/**
+ * Helper to construct a PDFArray with context and initial items
+ */
+function createPdfArray(context: any, items: any[] = []): PDFArray {
+  const arr = PDFArray.withContext(context);
+  items.forEach((item) => arr.push(item));
+  return arr;
+}
+
+/**
+ * Exports a standards-compliant Tagged PDF (PDF/UA-1 / ISO 14289-1 & ISO 32000-1)
+ * with complete StructTreeRoot, StructElem hierarchy, ParentTree Number Tree,
+ * Page StructParents, and Marked Content sequences (/Tag << /MCID n >> BDC ... EMC)
+ * so that Adobe Acrobat Pro and assistive readers display text items nested inside tags.
+ */
 export async function exportAccessibleTaggedPdf(doc: EbookDocument): Promise<Blob> {
   let pdfDoc: PDFDocument;
 
@@ -10,6 +45,10 @@ export async function exportAccessibleTaggedPdf(doc: EbookDocument): Promise<Blo
     pdfDoc = await PDFDocument.create();
     pdfDoc.addPage([595.28, 841.89]);
   }
+
+  // Embed standard fonts for marked content operators
+  const fontHelvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const fontHelveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
   // 1. Set Standards-Compliant Document Information Dictionary & Metadata
   pdfDoc.setTitle(doc.metadata.title || 'Accessible Document');
@@ -39,32 +78,162 @@ export async function exportAccessibleTaggedPdf(doc: EbookDocument): Promise<Blo
   });
   catalog.set(PDFName.of('ViewerPreferences'), viewerPrefs);
 
-  // 5. Build StructTreeRoot and Structure Hierarchy
-  const structElements: any[] = [];
-  const sortedElements = [...doc.elements].sort((a, b) => a.readingOrder - b.readingOrder);
+  // 5. Build StructTreeRoot, StructElem hierarchy, and Marked Content
+  const pages = pdfDoc.getPages();
+  const structTreeRootRef = pdfDoc.context.nextRef();
+  const documentStructElemRef = pdfDoc.context.nextRef();
 
-  sortedElements.forEach((el) => {
-    if (el.tag === 'Artifact') return; // Artifacts are marked content or omitted from struct tree
-
-    const structElem = pdfDoc.context.obj({
-      Type: PDFName.of('StructElem'),
-      S: PDFName.of(el.tag === 'Caption' ? 'Caption' : el.tag),
-      Alt: el.altText ? PDFString.of(el.altText) : undefined,
-      ActualText: el.text ? PDFString.of(el.text.slice(0, 150)) : undefined,
-    });
-    structElements.push(structElem);
+  // Map to store indirect StructElem references per page index for the ParentTree
+  const pageStructRefsMap: Map<number, any[]> = new Map();
+  pages.forEach((_, pIdx) => {
+    pageStructRefsMap.set(pIdx, []);
   });
 
+  const allChildStructRefs: any[] = [];
+  const sortedElements = [...doc.elements].sort((a, b) => a.readingOrder - b.readingOrder);
+
+  // Group elements by page
+  const elementsByPage = new Map<number, typeof sortedElements>();
+  sortedElements.forEach((el) => {
+    const pNum = el.pageNumber || 1;
+    if (!elementsByPage.has(pNum)) {
+      elementsByPage.set(pNum, []);
+    }
+    elementsByPage.get(pNum)!.push(el);
+  });
+
+  // Process each page: link StructParents and inject marked content sequences
+  for (let pIdx = 0; pIdx < pages.length; pIdx++) {
+    const pageNum = pIdx + 1;
+    const page = pages[pIdx];
+    const pageElements = elementsByPage.get(pageNum) || [];
+    const pageStructRefs = pageStructRefsMap.get(pIdx)!;
+
+    // Set page /StructParents number and /Tabs /S (Use Document Structure for tab order)
+    page.node.set(PDFName.of('StructParents'), PDFNumber.of(pIdx));
+    page.node.set(PDFName.of('Tabs'), PDFName.of('S'));
+
+    let currentMcid = 0;
+    const markedContentOps: string[] = [];
+    const { width: pageWidth, height: pageHeight } = page.getSize();
+
+    pageElements.forEach((el) => {
+      if (el.tag === 'Artifact') {
+        // Artifacts in PDF/UA are marked content with /Artifact tag and not registered in StructTree
+        markedContentOps.push(`/Artifact << /Type /Pagination >> BDC\nEMC\n`);
+        return;
+      }
+
+      const mcid = currentMcid++;
+      const structElemRef = pdfDoc.context.nextRef();
+      pageStructRefs.push(structElemRef);
+      allChildStructRefs.push(structElemRef);
+
+      // Sanitize tag name to standard ISO 32000-1 structural types
+      const standardTag =
+        el.tag === 'Caption'
+          ? 'Caption'
+          : el.tag === 'ListItem'
+          ? 'LI'
+          : el.tag === 'Footnote'
+          ? 'Note'
+          : el.tag === 'Sidebar'
+          ? 'Sect'
+          : el.tag === 'Quote'
+          ? 'BlockQuote'
+          : el.tag;
+
+      // 1. Create StructElem dictionary with /Pg and /K pointing to the page's MCID
+      const structElemDict = pdfDoc.context.obj({
+        Type: PDFName.of('StructElem'),
+        S: PDFName.of(standardTag),
+        P: documentStructElemRef,
+        Pg: page.ref,
+        K: PDFNumber.of(mcid), // MCID integer linking directly to page content stream!
+        Alt: el.altText ? PDFString.of(el.altText) : undefined,
+        ActualText: el.text ? PDFString.of(el.text) : undefined,
+        T: el.text ? PDFString.of(el.text.slice(0, 60)) : PDFString.of(standardTag),
+      });
+      pdfDoc.context.assign(structElemRef, structElemDict);
+
+      // 2. Build Marked Content sequence in page content stream
+      const fontName = el.fontWeight === 'bold' ? fontHelveticaBold.name : fontHelvetica.name;
+      const fontSize = el.fontSize || 10.5;
+      const xPt = Math.max(10, (el.bbox.x / 100) * pageWidth);
+      const yPt = Math.max(10, pageHeight - ((el.bbox.y + el.bbox.height) / 100) * pageHeight);
+      const escapedText = escapePdfText(el.text || (el.altText ? `[Figure: ${el.altText}]` : ''));
+
+      markedContentOps.push(
+        `/${standardTag} << /MCID ${mcid} >> BDC\n` +
+        `BT\n` +
+        `/${fontName} ${fontSize} Tf\n` +
+        `${xPt.toFixed(2)} ${yPt.toFixed(2)} Td\n` +
+        `(${escapedText}) Tj\n` +
+        `ET\n` +
+        `EMC\n`
+      );
+    });
+
+    // Append Marked Content Stream to page contents
+    if (markedContentOps.length > 0) {
+      const mcStreamBytes = new TextEncoder().encode(markedContentOps.join('\n'));
+      const mcStream = pdfDoc.context.flateStream(mcStreamBytes);
+      const mcStreamRef = pdfDoc.context.register(mcStream);
+
+      const existingContents = page.node.Contents();
+      if (!existingContents) {
+        page.node.set(PDFName.of('Contents'), mcStreamRef);
+      } else if (existingContents instanceof PDFArray) {
+        existingContents.push(mcStreamRef);
+      } else {
+        const newContentsArray = createPdfArray(pdfDoc.context, [existingContents, mcStreamRef]);
+        page.node.set(PDFName.of('Contents'), newContentsArray);
+      }
+    }
+  }
+
+  // 6. Create Document Root StructElem
+  const documentStructElem = pdfDoc.context.obj({
+    Type: PDFName.of('StructElem'),
+    S: PDFName.of('Document'),
+    P: structTreeRootRef,
+    K: createPdfArray(pdfDoc.context, allChildStructRefs),
+    T: PDFString.of(doc.metadata.title || 'Document'),
+  });
+  pdfDoc.context.assign(documentStructElemRef, documentStructElem);
+
+  // 7. Build ParentTree Number Tree (mapping each page's StructParents index to array of StructElem refs)
+  const parentTreeNums: any[] = [];
+  pages.forEach((_, pIdx) => {
+    const pageRefs = pageStructRefsMap.get(pIdx) || [];
+    if (pageRefs.length > 0) {
+      const pageArray = createPdfArray(pdfDoc.context, pageRefs);
+      const pageArrayRef = pdfDoc.context.register(pageArray);
+      parentTreeNums.push(PDFNumber.of(pIdx));
+      parentTreeNums.push(pageArrayRef);
+    }
+  });
+
+  const parentTreeDict = pdfDoc.context.obj({
+    Nums: createPdfArray(pdfDoc.context, parentTreeNums),
+  });
+  const parentTreeRef = pdfDoc.context.register(parentTreeDict);
+
+  // 8. Build StructTreeRoot and attach to Catalog
   const structTreeRoot = pdfDoc.context.obj({
     Type: PDFName.of('StructTreeRoot'),
-    K: structElements.slice(0, 50), // Linked structure children
+    K: createPdfArray(pdfDoc.context, [documentStructElemRef]),
+    ParentTree: parentTreeRef,
+    ParentTreeNextKey: PDFNumber.of(pages.length),
     RoleMap: pdfDoc.context.obj({
       Sidebar: PDFName.of('Sect'),
       Footnote: PDFName.of('Note'),
       Quote: PDFName.of('BlockQuote'),
+      ListItem: PDFName.of('LI'),
     }),
   });
-  catalog.set(PDFName.of('StructTreeRoot'), structTreeRoot);
+  pdfDoc.context.assign(structTreeRootRef, structTreeRoot);
+  catalog.set(PDFName.of('StructTreeRoot'), structTreeRootRef);
 
   const pdfBytes = await pdfDoc.save();
   return new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' });
