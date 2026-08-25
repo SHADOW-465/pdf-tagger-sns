@@ -4,12 +4,14 @@ import {
   PDFString, 
   PDFNumber, 
   PDFArray, 
+  PDFDict,
   StandardFonts 
 } from 'pdf-lib';
 import type { EbookDocument } from '../types/pdf';
 
 /**
  * Escapes plain text for inclusion in PDF literal string operators: (text) Tj
+ * Ensures only printable ASCII characters and properly escaped delimiters.
  */
 function escapePdfText(text: string): string {
   if (!text) return '';
@@ -18,7 +20,7 @@ function escapePdfText(text: string): string {
     .replace(/\(/g, '\\(')
     .replace(/\)/g, '\\)')
     .replace(/[\r\n\t]+/g, ' ')
-    .replace(/[\x00-\x1F\x7F-\x9F]/g, '');
+    .replace(/[^\x20-\x7E]/g, ' ');
 }
 
 /**
@@ -34,19 +36,20 @@ function createPdfArray(context: any, items: any[] = []): PDFArray {
  * Exports a standards-compliant Tagged PDF (PDF/UA-1 / ISO 14289-1 & ISO 32000-1)
  * with complete StructTreeRoot, StructElem hierarchy, ParentTree Number Tree,
  * Page StructParents, and Marked Content sequences (/Tag << /MCID n >> BDC ... EMC)
- * so that Adobe Acrobat Pro and assistive readers display text items nested inside tags.
+ * so that Adobe Acrobat Pro and assistive readers display text items nested inside tags
+ * without file corruption errors.
  */
 export async function exportAccessibleTaggedPdf(doc: EbookDocument): Promise<Blob> {
   let pdfDoc: PDFDocument;
 
   if (doc.pdfArrayBuffer) {
-    pdfDoc = await PDFDocument.load(doc.pdfArrayBuffer);
+    pdfDoc = await PDFDocument.load(doc.pdfArrayBuffer.slice(0));
   } else {
     pdfDoc = await PDFDocument.create();
     pdfDoc.addPage([595.28, 841.89]);
   }
 
-  // Embed standard fonts for marked content operators
+  // Embed standard fonts for marked content rendering
   const fontHelvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const fontHelveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
@@ -78,7 +81,7 @@ export async function exportAccessibleTaggedPdf(doc: EbookDocument): Promise<Blo
   });
   catalog.set(PDFName.of('ViewerPreferences'), viewerPrefs);
 
-  // 5. Build StructTreeRoot, StructElem hierarchy, and Marked Content
+  // 5. Setup Structure Tree Roots
   const pages = pdfDoc.getPages();
   const structTreeRootRef = pdfDoc.context.nextRef();
   const documentStructElemRef = pdfDoc.context.nextRef();
@@ -102,7 +105,7 @@ export async function exportAccessibleTaggedPdf(doc: EbookDocument): Promise<Blo
     elementsByPage.get(pNum)!.push(el);
   });
 
-  // Process each page: link StructParents and inject marked content sequences
+  // Process each page: link font resources, StructParents, and inject marked content sequences
   for (let pIdx = 0; pIdx < pages.length; pIdx++) {
     const pageNum = pIdx + 1;
     const page = pages[pIdx];
@@ -113,6 +116,19 @@ export async function exportAccessibleTaggedPdf(doc: EbookDocument): Promise<Blo
     page.node.set(PDFName.of('StructParents'), PDFNumber.of(pIdx));
     page.node.set(PDFName.of('Tabs'), PDFName.of('S'));
 
+    // Register font resources on this page's /Resources dictionary under /F1 and /F2
+    const { Resources } = page.node.normalizedEntries();
+    const rawFontDict = Resources.get(PDFName.of('Font'));
+    let fontDict: PDFDict;
+    if (rawFontDict instanceof PDFDict) {
+      fontDict = rawFontDict;
+    } else {
+      fontDict = pdfDoc.context.obj({});
+      Resources.set(PDFName.of('Font'), fontDict);
+    }
+    fontDict.set(PDFName.of('F1'), fontHelvetica.ref);
+    fontDict.set(PDFName.of('F2'), fontHelveticaBold.ref);
+
     let currentMcid = 0;
     const markedContentOps: string[] = [];
     const { width: pageWidth, height: pageHeight } = page.getSize();
@@ -120,7 +136,7 @@ export async function exportAccessibleTaggedPdf(doc: EbookDocument): Promise<Blo
     pageElements.forEach((el) => {
       if (el.tag === 'Artifact') {
         // Artifacts in PDF/UA are marked content with /Artifact tag and not registered in StructTree
-        markedContentOps.push(`/Artifact << /Type /Pagination >> BDC\nEMC\n`);
+        markedContentOps.push(`q\n/Artifact << /Type /Pagination >> BDC\nEMC\nQ\n`);
         return;
       }
 
@@ -149,46 +165,39 @@ export async function exportAccessibleTaggedPdf(doc: EbookDocument): Promise<Blo
         S: PDFName.of(standardTag),
         P: documentStructElemRef,
         Pg: page.ref,
-        K: PDFNumber.of(mcid), // MCID integer linking directly to page content stream!
+        K: PDFNumber.of(mcid), // MCID integer linking directly to page content stream
         Alt: el.altText ? PDFString.of(el.altText) : undefined,
         ActualText: el.text ? PDFString.of(el.text) : undefined,
         T: el.text ? PDFString.of(el.text.slice(0, 60)) : PDFString.of(standardTag),
       });
       pdfDoc.context.assign(structElemRef, structElemDict);
 
-      // 2. Build Marked Content sequence in page content stream
-      const fontName = el.fontWeight === 'bold' ? fontHelveticaBold.name : fontHelvetica.name;
+      // 2. Build Marked Content sequence in page content stream using registered font /F1 or /F2
+      const fontResourceKey = el.fontWeight === 'bold' ? 'F2' : 'F1';
       const fontSize = el.fontSize || 10.5;
       const xPt = Math.max(10, (el.bbox.x / 100) * pageWidth);
       const yPt = Math.max(10, pageHeight - ((el.bbox.y + el.bbox.height) / 100) * pageHeight);
       const escapedText = escapePdfText(el.text || (el.altText ? `[Figure: ${el.altText}]` : ''));
 
       markedContentOps.push(
+        `q\n` +
         `/${standardTag} << /MCID ${mcid} >> BDC\n` +
         `BT\n` +
-        `/${fontName} ${fontSize} Tf\n` +
+        `/${fontResourceKey} ${fontSize} Tf\n` +
         `${xPt.toFixed(2)} ${yPt.toFixed(2)} Td\n` +
         `(${escapedText}) Tj\n` +
         `ET\n` +
-        `EMC\n`
+        `EMC\n` +
+        `Q\n`
       );
     });
 
-    // Append Marked Content Stream to page contents
+    // Append Marked Content Stream to page contents safely using page.node.addContentStream
     if (markedContentOps.length > 0) {
       const mcStreamBytes = new TextEncoder().encode(markedContentOps.join('\n'));
       const mcStream = pdfDoc.context.flateStream(mcStreamBytes);
       const mcStreamRef = pdfDoc.context.register(mcStream);
-
-      const existingContents = page.node.Contents();
-      if (!existingContents) {
-        page.node.set(PDFName.of('Contents'), mcStreamRef);
-      } else if (existingContents instanceof PDFArray) {
-        existingContents.push(mcStreamRef);
-      } else {
-        const newContentsArray = createPdfArray(pdfDoc.context, [existingContents, mcStreamRef]);
-        page.node.set(PDFName.of('Contents'), newContentsArray);
-      }
+      page.node.addContentStream(mcStreamRef);
     }
   }
 
