@@ -10,7 +10,11 @@ import {
   CheckCircle2, 
   RotateCcw,
   Volume2,
-  Printer
+  Printer,
+  Eye,
+  X,
+  Copy,
+  Check
 } from 'lucide-react';
 import type { EbookDocument } from '../../types/pdf';
 import { 
@@ -34,6 +38,8 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
 }) => {
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [downloadSuccess, setDownloadSuccess] = useState<string | null>(null);
+  const [previewModal, setPreviewModal] = useState<{ title: string; content: string; language: string } | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const handleDownloadPdf = async () => {
     setIsExportingPdf(true);
@@ -55,7 +61,7 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
         colors: ['#0f766e', '#14b8a6', '#0284c7', '#38bdf8'],
       });
 
-      setDownloadSuccess('Tagged PDF downloaded successfully!');
+      setDownloadSuccess('Standards-compliant Tagged PDF exported successfully!');
       setTimeout(() => setDownloadSuccess(null), 4000);
     } catch (err) {
       console.error('PDF export failed:', err);
@@ -96,15 +102,41 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
     setTimeout(() => setDownloadSuccess(null), 3000);
   };
 
+  const handlePreviewJson = () => {
+    const jsonStr = exportStructuredJson(document);
+    setPreviewModal({
+      title: 'Structure Tree JSON AST Preview',
+      content: jsonStr,
+      language: 'json',
+    });
+  };
+
+  const handlePreviewXhtml = () => {
+    const xhtmlStr = exportEpubXhtml(document);
+    setPreviewModal({
+      title: 'EPUB-Ready Semantic XHTML Preview',
+      content: xhtmlStr,
+      language: 'html',
+    });
+  };
+
+  const handleCopyCode = () => {
+    if (previewModal) {
+      navigator.clipboard.writeText(previewModal.content);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
   const score = document.validationReport.overallScore;
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10 font-sans">
       {/* Top Banner */}
       <div className="text-center max-w-2xl mx-auto mb-10">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-mono mb-3">
           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-          <span>Ready for Publication & Distribution</span>
+          <span>Validated for Publication & Distribution</span>
         </div>
         <h1 className="font-serif text-3xl sm:text-4xl font-bold text-navy-900 mb-2">
           Export Accessible Document Package
@@ -123,7 +155,7 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
 
       {/* Main 4 Export Options Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-        {/* Option 1: Accessible Tagged PDF */}
+        {/* Deliverable 1: Accessible Tagged PDF */}
         <div className="bg-white rounded-3xl p-7 border-2 border-teal-500 shadow-float relative flex flex-col justify-between group">
           <div className="absolute -top-3 left-6 px-3 py-0.5 rounded-full bg-teal-600 text-white text-[10px] font-mono font-bold uppercase tracking-wider shadow-sm">
             Primary Deliverable
@@ -138,7 +170,7 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
               Accessible Tagged PDF (PDF/UA)
             </h3>
             <p className="text-xs text-slate-600 leading-relaxed mb-4">
-              Complete PDF document embedded with a standard Document Structure Tree (`/StructTreeRoot`), `/MarkInfo`, language tags, and bookmarks outline.
+              Complete PDF publication embedded with Document Structure Tree (`/StructTreeRoot`), `/MarkInfo`, language tags, and standard role mappings.
             </p>
 
             <div className="flex flex-wrap gap-2 mb-6">
@@ -158,7 +190,7 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
           </button>
         </div>
 
-        {/* Option 2: Accessibility Audit Certificate */}
+        {/* Deliverable 2: Accessibility Audit Certificate */}
         <div className="bg-white rounded-3xl p-7 border border-slate-200 shadow-card flex flex-col justify-between group hover:shadow-float transition-all">
           <div>
             <div className="w-12 h-12 rounded-2xl bg-cyan-50 text-cyan-700 flex items-center justify-center mb-4">
@@ -169,11 +201,11 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
               Accessibility Audit Certificate
             </h3>
             <p className="text-xs text-slate-600 leading-relaxed mb-4">
-              Formal audit report detailing WCAG 2.1 Level AA compliance, heading continuity, alt-text coverage, table header scoping, and tag distribution.
+              Official audit certificate documenting WCAG 2.1 AA and ISO 14289-1 checklist compliance, tag distribution, and verification hash.
             </p>
 
             <div className="flex flex-wrap gap-2 mb-6">
-              <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-slate-100 text-slate-700">PDF/UA Checklist</span>
+              <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-slate-100 text-slate-700">PDF/UA Matrix</span>
               <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-slate-100 text-slate-700">Printable Certificate</span>
             </div>
           </div>
@@ -187,7 +219,7 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
           </button>
         </div>
 
-        {/* Option 3: Structured JSON AST */}
+        {/* Deliverable 3: Structured JSON AST */}
         <div className="bg-white rounded-3xl p-7 border border-slate-200 shadow-card flex flex-col justify-between group hover:shadow-float transition-all">
           <div>
             <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-700 flex items-center justify-center mb-4">
@@ -198,7 +230,7 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
               Extracted Structure JSON
             </h3>
             <p className="text-xs text-slate-600 leading-relaxed mb-4">
-              Raw AST and layout geometry metadata with bounding boxes, tag roles, confidence scores, and reading sequences for downstream CMS pipelines.
+              Complete AST with bounding boxes, tag roles, confidence scores, and reading order sequence for downstream CMS pipelines.
             </p>
 
             <div className="flex flex-wrap gap-2 mb-6">
@@ -207,16 +239,25 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
             </div>
           </div>
 
-          <button
-            onClick={handleDownloadJson}
-            className="w-full py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-medium text-sm transition-all flex items-center justify-center gap-2"
-          >
-            <Download className="w-4 h-4 text-purple-600" />
-            <span>Download Structure JSON</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handlePreviewJson}
+              className="flex-1 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-medium text-sm transition-all flex items-center justify-center gap-1.5"
+            >
+              <Eye className="w-4 h-4 text-slate-600" />
+              <span>Preview</span>
+            </button>
+            <button
+              onClick={handleDownloadJson}
+              className="flex-1 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-medium text-sm transition-all flex items-center justify-center gap-1.5 shadow-xs"
+            >
+              <Download className="w-4 h-4" />
+              <span>Download JSON</span>
+            </button>
+          </div>
         </div>
 
-        {/* Option 4: EPUB-Ready Semantic XHTML */}
+        {/* Deliverable 4: EPUB-Ready Semantic XHTML */}
         <div className="bg-white rounded-3xl p-7 border border-slate-200 shadow-card flex flex-col justify-between group hover:shadow-float transition-all">
           <div>
             <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-700 flex items-center justify-center mb-4">
@@ -227,26 +268,35 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
               EPUB-Ready Semantic XHTML
             </h3>
             <p className="text-xs text-slate-600 leading-relaxed mb-4">
-              Clean HTML5/XHTML article markup with semantic headers, tables, figures, footnotes, and sidebars ready for packaging into EPUB3 ebooks.
+              Clean HTML5/XHTML article markup with semantic headers, tables, figures, footnotes, and sidebars ready for EPUB3 ebook packaging.
             </p>
 
             <div className="flex flex-wrap gap-2 mb-6">
-              <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-slate-100 text-slate-700">EPUB3 Compatible</span>
+              <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-slate-100 text-slate-700">EPUB3 Standard</span>
               <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-slate-100 text-slate-700">XHTML5</span>
             </div>
           </div>
 
-          <button
-            onClick={handleDownloadEpubXhtml}
-            className="w-full py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-medium text-sm transition-all flex items-center justify-center gap-2"
-          >
-            <Download className="w-4 h-4 text-amber-600" />
-            <span>Download EPUB XHTML</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handlePreviewXhtml}
+              className="flex-1 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-medium text-sm transition-all flex items-center justify-center gap-1.5"
+            >
+              <Eye className="w-4 h-4 text-slate-600" />
+              <span>Preview</span>
+            </button>
+            <button
+              onClick={handleDownloadEpubXhtml}
+              className="flex-1 py-3 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-medium text-sm transition-all flex items-center justify-center gap-1.5 shadow-xs"
+            >
+              <Download className="w-4 h-4" />
+              <span>Download XHTML</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Bottom Actions */}
+      {/* Bottom Audition & Reset Action Bar */}
       <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-3 text-left">
           <div className="w-10 h-10 rounded-xl bg-teal-100 text-teal-800 flex items-center justify-center shrink-0">
@@ -254,10 +304,10 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
           </div>
           <div>
             <div className="text-xs font-serif font-bold text-slate-900">
-              Want to hear how screen readers speak this tagged document?
+              Audition Screen Reader Voice Synthesis
             </div>
             <div className="text-[11px] text-slate-500">
-              Launch the built-in Read Aloud audio simulator with synchronized visual highlights.
+              Listen to how NVDA, JAWS, and VoiceOver speak this tagged publication in real time.
             </div>
           </div>
         </div>
@@ -268,7 +318,7 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
             className="px-4 py-2 rounded-xl bg-teal-700 hover:bg-teal-600 text-white text-xs font-medium shadow-sm transition-all flex items-center gap-1.5"
           >
             <Volume2 className="w-3.5 h-3.5" />
-            <span>Listen to Read Aloud</span>
+            <span>Launch Voice Simulator</span>
           </button>
 
           <button
@@ -280,6 +330,41 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Code Preview Modal */}
+      {previewModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-950/70 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-modal w-full max-w-3xl overflow-hidden flex flex-col max-h-[85vh]">
+            <div className="px-6 py-4 bg-[#0b1626] text-white flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Code className="w-5 h-5 text-teal-400" />
+                <h3 className="font-serif font-bold text-sm text-white">
+                  {previewModal.title}
+                </h3>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleCopyCode}
+                  className="flex items-center gap-1 px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono transition-colors"
+                >
+                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{copied ? 'Copied!' : 'Copy Code'}</span>
+                </button>
+                <button
+                  onClick={() => setPreviewModal(null)}
+                  className="p-1 rounded text-slate-400 hover:text-white"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 overflow-y-auto bg-slate-950 text-slate-200 font-mono text-xs max-h-[65vh]">
+              <pre className="whitespace-pre-wrap break-words">{previewModal.content}</pre>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

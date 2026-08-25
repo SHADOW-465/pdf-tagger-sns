@@ -29,10 +29,10 @@ export const AccessibilityAuditModal: React.FC<AccessibilityAuditModalProps> = (
   };
 
   const checklist = [
-    { title: 'Document Title & Identification', standard: 'WCAG 2.4.2 & PDF/UA Clause 7.1', status: 'Passed' },
+    { title: 'Document Title & Language Identification', standard: 'WCAG 2.4.2 & PDF/UA Clause 7.1', status: 'Passed' },
     { title: 'Natural Language Declaration (/Lang en-US)', standard: 'WCAG 3.1.1 & PDF/UA Clause 7.2', status: 'Passed' },
     { title: 'Heading Hierarchy Sequence (H1 to H6)', standard: 'WCAG 1.3.1 & PDF/UA Clause 7.3', status: 'Passed' },
-    { title: 'Alternative Text for Non-Text Figures', standard: 'WCAG 1.1.1 & PDF/UA Clause 7.3', status: 'Passed' },
+    { title: 'Alternative Text for Non-Text Figures & Charts', standard: 'WCAG 1.1.1 & PDF/UA Clause 7.3', status: 'Passed' },
     { title: 'Tabular Data Header Scopes (TH / TD)', standard: 'WCAG 1.3.1 & PDF/UA Clause 7.5', status: 'Passed' },
     { title: 'Reading Order Serialization & Non-Interleaved Columns', standard: 'WCAG 1.3.2 & PDF/UA Clause 7.1', status: 'Passed' },
     { title: 'Decorative Artifact Isolation (Running Headers/Footers)', standard: 'PDF/UA Clause 7.18 Artifacts', status: 'Passed' },
@@ -44,12 +44,12 @@ export const AccessibilityAuditModal: React.FC<AccessibilityAuditModalProps> = (
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-950/70 backdrop-blur-sm animate-fade-in font-sans">
       <div className="bg-white rounded-3xl border border-slate-200 shadow-modal w-full max-w-4xl overflow-hidden flex flex-col max-h-[92vh]">
-        {/* Modal Top Bar (Hidden on print) */}
+        {/* Modal Header Bar (Hidden on print) */}
         <div className="no-print px-6 py-4 bg-[#0b1626] text-white flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-5 h-5 text-teal-400" />
             <h3 className="font-serif font-bold text-sm text-white">
-              Accessibility Audit Certificate Preview
+              Accessibility Audit Certificate
             </h3>
           </div>
 
@@ -59,7 +59,7 @@ export const AccessibilityAuditModal: React.FC<AccessibilityAuditModalProps> = (
               className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-500 text-white text-xs font-medium shadow-sm transition-all"
             >
               <Printer className="w-3.5 h-3.5" />
-              <span>Print / Save as PDF</span>
+              <span>Print / Save PDF</span>
             </button>
 
             <button
@@ -71,11 +71,11 @@ export const AccessibilityAuditModal: React.FC<AccessibilityAuditModalProps> = (
           </div>
         </div>
 
-        {/* Certificate Printable Body */}
+        {/* Certificate Body */}
         <div className="p-8 sm:p-12 overflow-y-auto space-y-8 text-left bg-white text-slate-900">
-          {/* Certificate Header Banner */}
+          {/* Certificate Banner */}
           <div className="text-center pb-6 border-b-2 border-slate-900 space-y-2">
-            <div className="w-14 h-14 rounded-2xl bg-teal-50 border border-teal-200 text-teal-700 flex items-center justify-center mx-auto mb-2 shadow-subtle">
+            <div className="w-14 h-14 rounded-2xl bg-teal-50 border border-teal-200 text-teal-700 flex items-center justify-center mx-auto mb-2 shadow-xs">
               <Award className="w-8 h-8" />
             </div>
             <div className="text-[11px] uppercase tracking-widest font-mono text-teal-800 font-bold">
@@ -84,12 +84,12 @@ export const AccessibilityAuditModal: React.FC<AccessibilityAuditModalProps> = (
             <h1 className="font-serif text-2xl sm:text-3xl font-bold text-navy-950">
               PDF/UA-1 & WCAG 2.1 Level AA Conformance
             </h1>
-            <p className="text-xs text-slate-600 max-w-xl mx-auto">
-              This document certifies that the electronic publication has been audited and structured according to ISO 14289-1 (PDF/UA) and W3C Web Content Accessibility Guidelines 2.1.
+            <p className="text-xs text-slate-600 max-w-xl mx-auto leading-relaxed">
+              This certificate affirms that the electronic publication has been audited and structured in conformance with ISO 14289-1 (PDF/UA) and W3C Web Content Accessibility Guidelines 2.1.
             </p>
           </div>
 
-          {/* Document Metadata Details */}
+          {/* Publication Metadata Details */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-5 rounded-2xl bg-slate-50 border border-slate-200 text-xs">
             <div>
               <span className="text-[11px] text-slate-500 block mb-0.5">Document Title</span>
@@ -110,7 +110,7 @@ export const AccessibilityAuditModal: React.FC<AccessibilityAuditModalProps> = (
               </span>
             </div>
             <div>
-              <span className="text-[11px] text-slate-500 block mb-0.5">Audit Date</span>
+              <span className="text-[11px] text-slate-500 block mb-0.5">Audit Timestamp</span>
               <span className="font-mono text-slate-700 block">
                 {new Date().toLocaleDateString()}
               </span>
@@ -160,7 +160,7 @@ export const AccessibilityAuditModal: React.FC<AccessibilityAuditModalProps> = (
               {Object.entries(report.tagDistribution).map(([tag, count]) => {
                 if (count === 0) return null;
                 return (
-                  <div key={tag} className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                  <div key={tag} className="p-3 rounded-2xl bg-slate-50 border border-slate-200">
                     <span className="font-mono font-bold text-slate-800 block text-base">
                       {count}
                     </span>
@@ -172,7 +172,7 @@ export const AccessibilityAuditModal: React.FC<AccessibilityAuditModalProps> = (
           </div>
 
           {/* Formal Accessibility Statement */}
-          <div className="p-5 rounded-2xl bg-teal-50/50 border border-teal-200 text-xs text-slate-700 space-y-2">
+          <div className="p-5 rounded-2xl bg-teal-50/60 border border-teal-200 text-xs text-slate-700 space-y-2">
             <h4 className="font-serif font-bold text-teal-950 text-sm">
               Accessibility Declaration
             </h4>

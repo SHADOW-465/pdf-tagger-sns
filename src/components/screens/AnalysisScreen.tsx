@@ -134,7 +134,7 @@ export const AnalysisScreen: React.FC<AnalysisScreenProps> = ({
     : Math.min(95, Math.round(((currentStepIndex + 1) / pipelineSteps.length) * 100));
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10 font-sans">
       {/* Header */}
       <div className="text-center max-w-xl mx-auto mb-8">
         {errorMessage ? (
@@ -151,22 +151,22 @@ export const AnalysisScreen: React.FC<AnalysisScreenProps> = ({
 
         <h1 className="font-serif text-3xl font-bold text-navy-900 mb-2">
           {errorMessage
-            ? 'PDF Ingestion Error'
+            ? 'PDF Ingestion Notice'
             : isReady
             ? 'Document Structure Inferred'
-            : 'Analyzing Document & Layout'}
+            : 'Analyzing Document Geometry & Tags'}
         </h1>
         <p className="text-slate-600 text-xs sm:text-sm">
           Processing {fileName || document?.fileName || 'ebook'} through our 8-stage accessibility engine.
         </p>
       </div>
 
-      {/* Error Card */}
+      {/* Error Notice */}
       {errorMessage && (
-        <div className="bg-rose-50 border border-rose-200 rounded-2xl p-6 mb-8 text-left">
+        <div className="bg-rose-50 border border-rose-200 rounded-3xl p-6 mb-8 text-left">
           <div className="flex items-center gap-2 text-rose-900 font-bold text-sm mb-2">
             <AlertTriangle className="w-4 h-4 text-rose-600" />
-            <span>Failed to parse PDF file</span>
+            <span>Failed to parse PDF document</span>
           </div>
           <p className="text-xs text-rose-700 leading-relaxed mb-4">{errorMessage}</p>
           <div className="flex items-center gap-3">
@@ -193,7 +193,7 @@ export const AnalysisScreen: React.FC<AnalysisScreenProps> = ({
       )}
 
       {/* Progress Bar */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-card mb-8">
+      <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-card mb-8 text-left">
         <div className="flex items-center justify-between text-xs font-mono text-slate-600 mb-2">
           <span>Overall Pipeline Progress</span>
           <span className={`font-bold ${errorMessage ? 'text-rose-700' : 'text-teal-700'}`}>
@@ -213,7 +213,7 @@ export const AnalysisScreen: React.FC<AnalysisScreenProps> = ({
       </div>
 
       {/* 8-Stage Pipeline Grid */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-card p-6 mb-8">
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-card p-6 mb-8 text-left">
         <h3 className="font-serif font-bold text-sm text-slate-900 mb-4 pb-2 border-b border-slate-100">
           Automated Pipeline Stages
         </h3>
@@ -226,11 +226,11 @@ export const AnalysisScreen: React.FC<AnalysisScreenProps> = ({
             return (
               <div
                 key={step.id}
-                className={`flex items-start gap-3.5 p-3 rounded-xl transition-all ${
+                className={`flex items-start gap-3.5 p-3 rounded-2xl transition-all ${
                   isCurrent
-                    ? 'bg-teal-50/80 border border-teal-200'
+                    ? 'bg-teal-50/90 border border-teal-200'
                     : isDone
-                    ? 'bg-slate-50/60'
+                    ? 'bg-slate-50/70'
                     : 'opacity-50'
                 }`}
               >
@@ -256,12 +256,12 @@ export const AnalysisScreen: React.FC<AnalysisScreenProps> = ({
                       {step.name}
                     </span>
                     {isDone && (
-                      <span className="text-[10px] font-mono text-emerald-700 bg-emerald-100/60 px-1.5 py-0.5 rounded">
+                      <span className="text-[10px] font-mono text-emerald-700 bg-emerald-100/70 px-1.5 py-0.5 rounded font-bold">
                         Passed
                       </span>
                     )}
                     {isCurrent && (
-                      <span className="text-[10px] font-mono text-teal-700 bg-teal-100 px-1.5 py-0.5 rounded animate-pulse">
+                      <span className="text-[10px] font-mono text-teal-700 bg-teal-100 px-1.5 py-0.5 rounded animate-pulse font-bold">
                         Active
                       </span>
                     )}
@@ -276,8 +276,8 @@ export const AnalysisScreen: React.FC<AnalysisScreenProps> = ({
         </div>
       </div>
 
-      {/* Live Log Terminal Output */}
-      <div className="bg-[#0b1626] rounded-2xl p-5 border border-navy-800 text-slate-300 font-mono text-xs shadow-card mb-8">
+      {/* Real-Time Log Terminal */}
+      <div className="bg-[#0b1626] rounded-3xl p-5 border border-navy-800 text-slate-300 font-mono text-xs shadow-card mb-8 text-left">
         <div className="flex items-center justify-between pb-3 mb-3 border-b border-navy-800 text-slate-400 text-[11px]">
           <div className="flex items-center gap-2">
             <Terminal className="w-4 h-4 text-teal-400" />
@@ -300,7 +300,7 @@ export const AnalysisScreen: React.FC<AnalysisScreenProps> = ({
           <button
             onClick={onAnalysisComplete}
             disabled={!document}
-            className={`px-8 py-4 rounded-xl text-white font-medium text-base shadow-float transition-all flex items-center gap-2.5 ${
+            className={`px-8 py-4 rounded-2xl text-white font-medium text-base shadow-float transition-all flex items-center gap-2.5 ${
               document
                 ? 'bg-teal-600 hover:bg-teal-500 cursor-pointer animate-bounce-short hover:shadow-lg'
                 : 'bg-slate-400 cursor-not-allowed opacity-75'

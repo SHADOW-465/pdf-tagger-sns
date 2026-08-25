@@ -8,6 +8,7 @@ export interface TagConfig {
   bgLight: string;
   borderColor: string;
   textColor: string;
+  shortcutKey: string;
   category: 'heading' | 'text' | 'structural' | 'media' | 'tabular' | 'decorative';
 }
 
@@ -20,6 +21,7 @@ export const TAG_CONFIGS: Record<PdfTagType, TagConfig> = {
     bgLight: '#f5f3ff',
     borderColor: '#c4b5fd',
     textColor: '#5b21b6',
+    shortcutKey: '1',
     category: 'heading',
   },
   H2: {
@@ -30,6 +32,7 @@ export const TAG_CONFIGS: Record<PdfTagType, TagConfig> = {
     bgLight: '#eff6ff',
     borderColor: '#93c5fd',
     textColor: '#1e40af',
+    shortcutKey: '2',
     category: 'heading',
   },
   H3: {
@@ -40,6 +43,7 @@ export const TAG_CONFIGS: Record<PdfTagType, TagConfig> = {
     bgLight: '#ecfeff',
     borderColor: '#67e8f9',
     textColor: '#155e75',
+    shortcutKey: '3',
     category: 'heading',
   },
   H4: {
@@ -50,6 +54,7 @@ export const TAG_CONFIGS: Record<PdfTagType, TagConfig> = {
     bgLight: '#f0f9ff',
     borderColor: '#7dd3fc',
     textColor: '#075985',
+    shortcutKey: '4',
     category: 'heading',
   },
   H5: {
@@ -60,6 +65,7 @@ export const TAG_CONFIGS: Record<PdfTagType, TagConfig> = {
     bgLight: '#eef2ff',
     borderColor: '#a5b4fc',
     textColor: '#3730a3',
+    shortcutKey: '5',
     category: 'heading',
   },
   H6: {
@@ -70,6 +76,7 @@ export const TAG_CONFIGS: Record<PdfTagType, TagConfig> = {
     bgLight: '#e0e7ff',
     borderColor: '#c7d2fe',
     textColor: '#4338ca',
+    shortcutKey: '6',
     category: 'heading',
   },
   P: {
@@ -80,6 +87,7 @@ export const TAG_CONFIGS: Record<PdfTagType, TagConfig> = {
     bgLight: '#f8fafc',
     borderColor: '#cbd5e1',
     textColor: '#334155',
+    shortcutKey: 'P',
     category: 'text',
   },
   List: {
@@ -90,6 +98,7 @@ export const TAG_CONFIGS: Record<PdfTagType, TagConfig> = {
     bgLight: '#fefce8',
     borderColor: '#fde047',
     textColor: '#854d0e',
+    shortcutKey: 'O',
     category: 'structural',
   },
   ListItem: {
@@ -100,6 +109,7 @@ export const TAG_CONFIGS: Record<PdfTagType, TagConfig> = {
     bgLight: '#fffbeb',
     borderColor: '#fcd34d',
     textColor: '#92400e',
+    shortcutKey: 'L',
     category: 'structural',
   },
   Table: {
@@ -110,6 +120,7 @@ export const TAG_CONFIGS: Record<PdfTagType, TagConfig> = {
     bgLight: '#fff7ed',
     borderColor: '#fdba74',
     textColor: '#9a3412',
+    shortcutKey: 'T',
     category: 'tabular',
   },
   TH: {
@@ -120,6 +131,7 @@ export const TAG_CONFIGS: Record<PdfTagType, TagConfig> = {
     bgLight: '#ffedd5',
     borderColor: '#fb923c',
     textColor: '#7c2d12',
+    shortcutKey: 'H',
     category: 'tabular',
   },
   TD: {
@@ -130,6 +142,7 @@ export const TAG_CONFIGS: Record<PdfTagType, TagConfig> = {
     bgLight: '#fef3c7',
     borderColor: '#fde68a',
     textColor: '#78350f',
+    shortcutKey: 'D',
     category: 'tabular',
   },
   Figure: {
@@ -140,6 +153,7 @@ export const TAG_CONFIGS: Record<PdfTagType, TagConfig> = {
     bgLight: '#f0fdfa',
     borderColor: '#5eead4',
     textColor: '#115e59',
+    shortcutKey: 'F',
     category: 'media',
   },
   Caption: {
@@ -150,6 +164,7 @@ export const TAG_CONFIGS: Record<PdfTagType, TagConfig> = {
     bgLight: '#ecfdf5',
     borderColor: '#6ee7b7',
     textColor: '#065f46',
+    shortcutKey: 'C',
     category: 'media',
   },
   Footnote: {
@@ -160,6 +175,7 @@ export const TAG_CONFIGS: Record<PdfTagType, TagConfig> = {
     bgLight: '#fff1f2',
     borderColor: '#fda4af',
     textColor: '#9f1239',
+    shortcutKey: 'N',
     category: 'text',
   },
   Sidebar: {
@@ -170,6 +186,7 @@ export const TAG_CONFIGS: Record<PdfTagType, TagConfig> = {
     bgLight: '#eef2ff',
     borderColor: '#a5b4fc',
     textColor: '#3730a3',
+    shortcutKey: 'S',
     category: 'structural',
   },
   Quote: {
@@ -180,6 +197,7 @@ export const TAG_CONFIGS: Record<PdfTagType, TagConfig> = {
     bgLight: '#faf5ff',
     borderColor: '#d8b4fe',
     textColor: '#581c87',
+    shortcutKey: 'Q',
     category: 'text',
   },
   Artifact: {
@@ -190,6 +208,7 @@ export const TAG_CONFIGS: Record<PdfTagType, TagConfig> = {
     bgLight: '#f1f5f9',
     borderColor: '#cbd5e1',
     textColor: '#475569',
+    shortcutKey: 'A',
     category: 'decorative',
   },
   Link: {
@@ -200,6 +219,7 @@ export const TAG_CONFIGS: Record<PdfTagType, TagConfig> = {
     bgLight: '#f0f9ff',
     borderColor: '#7dd3fc',
     textColor: '#075985',
+    shortcutKey: 'K',
     category: 'text',
   },
 };
@@ -215,12 +235,12 @@ export function formatBytes(bytes: number, decimals = 1): string {
 
 export function formatSpeechAnnouncement(element: PdfElement): string {
   if (element.tag === 'Artifact') {
-    return `[Artifact - skipped by screen reader]`;
+    return `[Artifact - decorative page content skipped by screen readers]`;
   }
   
   if (element.tag === 'Figure') {
-    const alt = element.altText || element.aiAltTextSuggested || 'Image without alternative text';
-    return `Graphic. ${alt}.`;
+    const alt = element.altText || element.aiAltTextSuggested || 'Figure without alternative text';
+    return `Graphic figure. ${alt}.`;
   }
 
   if (element.tag === 'H1') {
@@ -246,7 +266,7 @@ export function formatSpeechAnnouncement(element: PdfElement): string {
     const rows = element.tableData?.rowCount || 3;
     const cols = element.tableData?.colCount || 3;
     const caption = element.tableData?.caption ? ` Caption: ${element.tableData.caption}.` : '';
-    return `Table with ${cols} columns and ${rows} rows.${caption} ${element.text.slice(0, 100)}`;
+    return `Table with ${cols} columns and ${rows} rows.${caption} ${element.text.slice(0, 120)}`;
   }
 
   if (element.tag === 'ListItem') {
@@ -254,7 +274,11 @@ export function formatSpeechAnnouncement(element: PdfElement): string {
   }
 
   if (element.tag === 'Sidebar') {
-    return `Sidebar callout. ${element.text}`;
+    return `Sidebar callout box. ${element.text}`;
+  }
+
+  if (element.tag === 'Quote') {
+    return `Blockquote. "${element.text}"`;
   }
 
   if (element.tag === 'Footnote') {
@@ -262,7 +286,7 @@ export function formatSpeechAnnouncement(element: PdfElement): string {
   }
 
   if (element.tag === 'Link') {
-    return `Link. ${element.text}. Destination: ${element.linkUrl || 'internal'}`;
+    return `Link. ${element.text}. Destination: ${element.linkUrl || 'internal reference'}`;
   }
 
   return element.text;
@@ -270,7 +294,7 @@ export function formatSpeechAnnouncement(element: PdfElement): string {
 
 export interface HierarchyTreeNode {
   id: string;
-  type: 'document' | 'chapter' | 'section' | 'element';
+  type: 'document' | 'chapter' | 'section' | 'subsection' | 'element';
   title: string;
   element?: PdfElement;
   children: HierarchyTreeNode[];
@@ -291,6 +315,7 @@ export function buildHierarchyTree(elements: PdfElement[], docTitle: string): Hi
 
   let currentChapter: HierarchyTreeNode | null = null;
   let currentSection: HierarchyTreeNode | null = null;
+  let currentSubSection: HierarchyTreeNode | null = null;
 
   const sortedElements = [...elements].sort((a, b) => a.readingOrder - b.readingOrder);
 
@@ -323,6 +348,7 @@ export function buildHierarchyTree(elements: PdfElement[], docTitle: string): Hi
       };
       root.children.push(currentChapter);
       currentSection = null;
+      currentSubSection = null;
     } else if (el.tag === 'H2') {
       currentSection = {
         id: `sec-${el.id}`,
@@ -342,8 +368,32 @@ export function buildHierarchyTree(elements: PdfElement[], docTitle: string): Hi
       } else {
         root.children.push(currentSection);
       }
-    } else {
+      currentSubSection = null;
+    } else if (el.tag === 'H3') {
+      currentSubSection = {
+        id: `subsec-${el.id}`,
+        type: 'subsection',
+        title: el.text || 'Untitled Subsection',
+        element: el,
+        children: [elementNode],
+        pageNumber: el.pageNumber,
+        readingOrder: el.readingOrder,
+        tag: 'H3',
+        confidence: el.confidence,
+        isFlagged: el.isFlaggedForReview,
+      };
+
       if (currentSection) {
+        currentSection.children.push(currentSubSection);
+      } else if (currentChapter) {
+        currentChapter.children.push(currentSubSection);
+      } else {
+        root.children.push(currentSubSection);
+      }
+    } else {
+      if (currentSubSection) {
+        currentSubSection.children.push(elementNode);
+      } else if (currentSection) {
         currentSection.children.push(elementNode);
       } else if (currentChapter) {
         currentChapter.children.push(elementNode);
@@ -354,4 +404,34 @@ export function buildHierarchyTree(elements: PdfElement[], docTitle: string): Hi
   });
 
   return root;
+}
+
+export function checkSkippedHeading(element: PdfElement, allElements: PdfElement[]): { isSkipped: boolean; expectedTag?: PdfTagType; prevHeadingTag?: PdfTagType } {
+  if (!element.tag.startsWith('H')) return { isSkipped: false };
+  const currentLevel = parseInt(element.tag.substring(1), 10);
+  if (isNaN(currentLevel)) return { isSkipped: false };
+
+  const sortedHeadings = allElements
+    .filter((e) => e.tag.startsWith('H') && e.readingOrder < element.readingOrder)
+    .sort((a, b) => a.readingOrder - b.readingOrder);
+
+  if (sortedHeadings.length === 0) {
+    if (currentLevel !== 1) {
+      return { isSkipped: true, expectedTag: 'H1' };
+    }
+    return { isSkipped: false };
+  }
+
+  const prevHeading = sortedHeadings[sortedHeadings.length - 1];
+  const prevLevel = parseInt(prevHeading.tag.substring(1), 10);
+
+  if (currentLevel > prevLevel + 1) {
+    return {
+      isSkipped: true,
+      expectedTag: `H${prevLevel + 1}` as PdfTagType,
+      prevHeadingTag: prevHeading.tag,
+    };
+  }
+
+  return { isSkipped: false };
 }

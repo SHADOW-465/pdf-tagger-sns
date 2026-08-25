@@ -1,17 +1,17 @@
 @import "tailwindcss";
 
 @theme {
-  --color-brand-50: #f0f9ff;
-  --color-brand-100: #e0f2fe;
-  --color-brand-200: #bae6fd;
-  --color-brand-300: #7dd3fc;
-  --color-brand-400: #38bdf8;
-  --color-brand-500: #0ea5e9;
-  --color-brand-600: #0284c7;
-  --color-brand-700: #0369a1;
-  --color-brand-800: #075985;
-  --color-brand-900: #0c4a6e;
-  --color-brand-950: #082f49;
+  --color-brand-50: #f0fdfa;
+  --color-brand-100: #ccfbf1;
+  --color-brand-200: #99f6e4;
+  --color-brand-300: #5eead4;
+  --color-brand-400: #2dd4bf;
+  --color-brand-500: #14b8a6;
+  --color-brand-600: #0d9488;
+  --color-brand-700: #0f766e;
+  --color-brand-800: #115e59;
+  --color-brand-900: #134e4a;
+  --color-brand-950: #042f2e;
 
   --color-navy-800: #13233a;
   --color-navy-850: #0f1c2e;
@@ -22,18 +22,18 @@
   --font-serif: 'Newsreader', Georgia, Cambria, 'Times New Roman', serif;
   --font-mono: 'JetBrains Mono', Menlo, Monaco, Consolas, monospace;
 
-  --shadow-subtle: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
-  --shadow-card: 0 4px 12px 0 rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
-  --shadow-float: 0 12px 30px -4px rgba(11, 22, 38, 0.12), 0 4px 12px -2px rgba(11, 22, 38, 0.08);
-  --shadow-modal: 0 25px 50px -12px rgba(6, 13, 23, 0.25);
+  --shadow-subtle: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
+  --shadow-card: 0 4px 12px 0 rgba(15, 23, 42, 0.05), 0 1px 3px 0 rgba(15, 23, 42, 0.04);
+  --shadow-float: 0 12px 28px -4px rgba(11, 22, 38, 0.12), 0 4px 12px -2px rgba(11, 22, 38, 0.06);
+  --shadow-modal: 0 25px 50px -12px rgba(6, 13, 23, 0.35);
 }
 
 :root {
-  --color-bg: #fbfbf9;
+  --color-bg: #f8fafc;
   --color-surface: #ffffff;
-  --color-panel: #f4f5f1;
-  --color-border: #e2e5dc;
-  --color-dark-border: #cbd0c3;
+  --color-panel: #f1f5f9;
+  --color-border: #e2e8f0;
+  --color-dark-border: #cbd5e1;
   --color-navy: #0b1626;
   --color-teal: #0f766e;
   --color-amber: #d97706;
@@ -41,10 +41,10 @@
 
 body {
   background-color: var(--color-bg);
-  color: #1a202c;
+  color: #0f172a;
 }
 
-/* Accessible focus ring */
+/* Accessible focus ring - WCAG 2.4.7 Focus Visible */
 *:focus-visible {
   outline: 2px solid #0f766e;
   outline-offset: 2px;
@@ -66,6 +66,26 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+
+/* Subtle animations */
+@keyframes pulseSubtle {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.85; transform: scale(1.02); }
+}
+
+@keyframes equalizer {
+  0%, 100% { height: 4px; }
+  50% { height: 16px; }
+}
+
+.animate-pulse-subtle {
+  animation: pulseSubtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-equalizer-1 { animation: equalizer 0.8s ease-in-out infinite; }
+.animate-equalizer-2 { animation: equalizer 0.6s ease-in-out infinite 0.15s; }
+.animate-equalizer-3 { animation: equalizer 0.9s ease-in-out infinite 0.3s; }
+.animate-equalizer-4 { animation: equalizer 0.7s ease-in-out infinite 0.2s; }
 
 /* Print styles for Accessibility Audit Report */
 @media print {
