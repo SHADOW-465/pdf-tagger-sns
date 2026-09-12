@@ -143,18 +143,21 @@ export const ReviewWorkspace: React.FC<ReviewWorkspaceProps> = ({
     setPaneWeights((prev) => persistPanes(clampPanes(prev[0], prev[1] + dx, prev[2] - dx)));
   };
 
-  // Sync selection and page when spoken element changes
+  // Sync selection and page only when the spoken element actually changes
+  const lastSpokenIdRef = useRef<string | null>(null);
+
   useEffect(() => {
-    if (activeSpokenElementId) {
+    if (activeSpokenElementId && activeSpokenElementId !== lastSpokenIdRef.current) {
+      lastSpokenIdRef.current = activeSpokenElementId;
       const spokenEl = document.elements.find((e) => e.id === activeSpokenElementId);
       if (spokenEl) {
         setSelectedElementId(spokenEl.id);
-        if (spokenEl.pageNumber !== currentPage) {
-          setCurrentPage(spokenEl.pageNumber);
-        }
+        setCurrentPage((prevPage) => (spokenEl.pageNumber !== prevPage ? spokenEl.pageNumber : prevPage));
       }
+    } else if (!activeSpokenElementId) {
+      lastSpokenIdRef.current = null;
     }
-  }, [activeSpokenElementId, currentPage, document.elements]);
+  }, [activeSpokenElementId, document.elements]);
 
   const handleSelectElement = useCallback((elementId: string) => {
     setSelectedElementId(elementId);

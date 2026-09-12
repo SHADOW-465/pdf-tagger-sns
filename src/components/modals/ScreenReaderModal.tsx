@@ -8,7 +8,10 @@ import {
   SkipForward, 
   SkipBack, 
   Terminal,
-  Activity
+  Activity,
+  Minimize2,
+  Maximize2,
+  BookOpen
 } from 'lucide-react';
 import type { EbookDocument, PdfElement } from '../../types/pdf';
 import { 
@@ -22,6 +25,8 @@ interface ScreenReaderModalProps {
   onClose: () => void;
   document: EbookDocument;
   onSelectElement: (elementId: string) => void;
+  currentPage?: number;
+  onPageChange?: (pageNumber: number) => void;
 }
 
 export const ScreenReaderModal: React.FC<ScreenReaderModalProps> = ({
@@ -29,6 +34,8 @@ export const ScreenReaderModal: React.FC<ScreenReaderModalProps> = ({
   onClose,
   document,
   onSelectElement,
+  currentPage: externalCurrentPage,
+  onPageChange,
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -39,36 +46,59 @@ export const ScreenReaderModal: React.FC<ScreenReaderModalProps> = ({
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [selectedVoiceUri, setSelectedVoiceUri] = useState<string>('');
   const [rate, setRate] = useState(1.05);
+  const [isMinimized, setIsMinimized] = useState(false);
+  const [selectedPage, setSelectedPage] = useState<number>(externalCurrentPage || 1);
 
+  // Keep selectedPage in sync if externalCurrentPage changes
+  useEffect(() => {
+    if (externalCurrentPage) {
+      setSelectedPage(externalCurrentPage);
+    }
+  }, [externalCurrentPage]);
+
+  // Keep elements synced with service
   useEffect(() => {
     if (!isOpen) return;
 
     screenReaderService.setElements(document.elements);
     
     // Load speech voices
-    const availableVoices = screenReaderService.getAvailableVoices();
-    setVoices(availableVoices);
-    if (availableVoices.length > 0 && !selectedVoiceUri) {
-      setSelectedVoiceUri(availableVoices[0].voiceURI);
+    const loadVoices = () => {
+      const availableVoices = screenReaderService.getAvailableVoices();
+      setVoices(availableVoices);
+      if (availableVoices.length > 0 && !selectedVoiceUri) {
+        setSelectedVoiceUri(availableVoices[0].voiceURI);
+      }
+    };
+
+    loadVoices();
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.onvoiceschanged = loadVoices;
     }
 
-    screenReaderService.setCallbacks(
-      (el, idx, total) => {
+    // Subscribe with multi-subscriber clean cleanup
+    const unsubscribe = screenReaderService.subscribe({
+      onActiveElementChange: (el, idx, total) => {
         setActiveElement(el);
         setActiveIdx(idx);
         setTotalCount(total);
         if (el) {
+          setSelectedPage(el.pageNumber);
           onSelectElement(el.id);
         }
       },
-      (item) => {
+      onTranscriptUpdate: (item) => {
         setTranscripts((prev) => [...prev.slice(-40), item]);
       },
-      (playing, paused) => {
+      onStateChange: (playing, paused) => {
         setIsPlaying(playing);
         setIsPaused(paused);
-      }
-    );
+      },
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, [isOpen, document.elements, onSelectElement, selectedVoiceUri]);
 
   if (!isOpen) return null;
@@ -77,7 +107,12 @@ export const ScreenReaderModal: React.FC<ScreenReaderModalProps> = ({
     if (isPaused) {
       screenReaderService.resume();
     } else {
-      screenReaderService.playFromStart();
+      // If user selected a specific page, play starting from that page
+      if (selectedPage && selectedPage > 1) {
+        screenReaderService.playFromPage(selectedPage);
+      } else {
+        screenReaderService.playFromStart();
+      }
     }
   };
 
@@ -97,6 +132,17 @@ export const ScreenReaderModal: React.FC<ScreenReaderModalProps> = ({
     screenReaderService.previous();
   };
 
+  const handlePageSelectChange = (pageNum: number) => {
+    setSelectedPage(pageNum);
+    if (onPageChange) {
+      onPageChange(pageNum);
+    }
+    // If playing or user specifically jumps, cue from that page
+    if (isPlaying && !isPaused) {
+      screenReaderService.playFromPage(pageNum);
+    }
+  };
+
   const handleVoiceChange = (uri: string) => {
     setSelectedVoiceUri(uri);
     const chosen = voices.find((v) => v.voiceURI === uri) || null;
@@ -107,6 +153,81 @@ export const ScreenReaderModal: React.FC<ScreenReaderModalProps> = ({
     setRate(newRate);
     screenReaderService.setVoiceConfig({ rate: newRate });
   };
+
+  // Minimized Floating Player Dock (Bottom-Right)
+  if (isMinimized) {
+    return (
+      <div className="fixed bottom-6 right-6 z-50 animate-slide-in-right font-sans">
+        <div className="bg-[#0b1626] text-white rounded-2xl border border-slate-700 shadow-2xl p-3.5 flex items-center gap-3 backdrop-blur-md max-w-md">
+          <div className="w-8 h-8 rounded-xl bg-teal-600 flex items-center justify-center text-white shrink-0 shadow-xs">
+            <Volume2 className="w-4 h-4" />
+          </div>
+
+          <div className="min-w-0 pr-2">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-serif font-bold truncate">Voice Test</span>
+              {isPlaying && (
+                <span className={`text-[9px] font-mono px-1.5 py-0.2 rounded-full font-bold ${
+                  isPaused ? 'bg-amber-900/80 text-amber-300' : 'bg-emerald-900/80 text-emerald-300 animate-pulse'
+                }`}>
+                  {isPaused ? 'PAUSED' : 'LIVE'}
+                </span>
+              )}
+            </div>
+            <p className="text-[11px] text-slate-300 truncate max-w-[170px]">
+              {activeElement ? `P.${activeElement.pageNumber} • ${activeElement.tag}: ${activeElement.text || 'Element'}` : 'Idle'}
+            </p>
+          </div>
+
+          {/* Quick Controls */}
+          <div className="flex items-center gap-1 shrink-0">
+            {isPlaying && !isPaused ? (
+              <button
+                onClick={handlePause}
+                className="p-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white shadow-xs"
+                title="Pause voice"
+              >
+                <Pause className="w-3.5 h-3.5" />
+              </button>
+            ) : (
+              <button
+                onClick={handlePlay}
+                className="p-2 rounded-lg bg-teal-600 hover:bg-teal-500 text-white shadow-xs"
+                title="Play/Resume voice"
+              >
+                <Play className="w-3.5 h-3.5" />
+              </button>
+            )}
+
+            <button
+              disabled={!isPlaying}
+              onClick={handleStop}
+              className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-rose-400 disabled:opacity-40"
+              title="Stop voice"
+            >
+              <Square className="w-3.5 h-3.5" />
+            </button>
+
+            <button
+              onClick={() => setIsMinimized(false)}
+              className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300"
+              title="Maximize Voice Test Window"
+            >
+              <Maximize2 className="w-3.5 h-3.5" />
+            </button>
+
+            <button
+              onClick={onClose}
+              className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white"
+              title="Close Voice Test"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-950/70 backdrop-blur-sm animate-fade-in font-sans">
@@ -135,13 +256,23 @@ export const ScreenReaderModal: React.FC<ScreenReaderModalProps> = ({
             </div>
           </div>
 
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-            title="Close modal"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setIsMinimized(true)}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors flex items-center gap-1 text-xs"
+              title="Minimize to floating widget (allows you to navigate & edit pages)"
+            >
+              <Minimize2 className="w-4 h-4" />
+              <span className="hidden sm:inline text-[11px]">Minimize</span>
+            </button>
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              title="Close modal"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Modal Body */}
@@ -176,7 +307,7 @@ export const ScreenReaderModal: React.FC<ScreenReaderModalProps> = ({
               </div>
             ) : (
               <div className="text-xs text-slate-500 italic py-2">
-                Press "Play from Beginning" to start synthesizing speech sequentially through the document structure tree.
+                Press "Play" to start synthesizing speech sequentially through the document structure tree.
               </div>
             )}
           </div>
@@ -208,7 +339,7 @@ export const ScreenReaderModal: React.FC<ScreenReaderModalProps> = ({
                   className="px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-medium text-xs shadow-md transition-all flex items-center gap-1.5"
                 >
                   <Play className="w-4 h-4" />
-                  <span>{isPaused ? 'Resume' : 'Play from Beginning'}</span>
+                  <span>{isPaused ? 'Resume' : selectedPage > 1 ? `Play Page ${selectedPage}` : 'Play from Beginning'}</span>
                 </button>
               )}
 
@@ -231,13 +362,30 @@ export const ScreenReaderModal: React.FC<ScreenReaderModalProps> = ({
               </button>
             </div>
 
-            {/* Voice & Speed controls */}
-            <div className="flex items-center gap-3">
+            {/* Page Jump & Voice & Speed controls */}
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Jump to Page Selector */}
+              <div className="flex items-center gap-1 text-xs bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-slate-800 shadow-xs">
+                <BookOpen className="w-3.5 h-3.5 text-teal-600" />
+                <span className="text-slate-500 text-[11px]">Page:</span>
+                <select
+                  value={selectedPage}
+                  onChange={(e) => handlePageSelectChange(parseInt(e.target.value, 10))}
+                  className="text-xs font-mono font-bold bg-transparent border-none text-slate-800 focus:outline-none cursor-pointer"
+                >
+                  {Array.from({ length: document.pageCount || 1 }).map((_, i) => (
+                    <option key={i + 1} value={i + 1}>
+                      {i + 1} of {document.pageCount}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               {voices.length > 0 && (
                 <select
                   value={selectedVoiceUri}
                   onChange={(e) => handleVoiceChange(e.target.value)}
-                  className="text-xs bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-800 shadow-xs max-w-[180px] truncate"
+                  className="text-xs bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-800 shadow-xs max-w-[160px] truncate"
                 >
                   {voices.map((v) => (
                     <option key={v.voiceURI} value={v.voiceURI}>

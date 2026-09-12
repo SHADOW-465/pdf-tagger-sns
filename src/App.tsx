@@ -35,15 +35,18 @@ export function App() {
 
   // Setup global speech synthesizer listener
   useEffect(() => {
-    screenReaderService.setCallbacks(
-      (el) => {
+    const unsubscribe = screenReaderService.subscribe({
+      onActiveElementChange: (el) => {
         setActiveSpokenElementId(el ? el.id : null);
       },
-      undefined,
-      (playing) => {
+      onStateChange: (playing) => {
         setIsAudioPlaying(playing);
-      }
-    );
+      },
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   // Global keyboard shortcuts (? for help, Esc to close)
