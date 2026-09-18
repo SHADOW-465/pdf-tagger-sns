@@ -23,3 +23,9 @@ dist-ssr
 *.sln
 *.sw?
 .gstack/
+
+# Documentation & local assets
+CHANGELOG.md
+PRODUCT.md
+pdf-tagger-sns-overview.pdf
+
