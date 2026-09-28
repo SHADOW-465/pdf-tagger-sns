@@ -26,6 +26,7 @@ dist-ssr
 
 # Documentation & local assets
 CHANGELOG.md
+!automation-app/CHANGELOG.md
 PRODUCT.md
 pdf-tagger-sns-overview.pdf
 
