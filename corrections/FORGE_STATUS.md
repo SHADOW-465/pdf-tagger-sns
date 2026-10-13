@@ -9,3 +9,5 @@ Pictures that InDesign had dumped in a pile are now placed on the printed page t
 The house style screen now leads with a few plain choices, such as the kind of e-book, page numbers and picture descriptions, and puts the rest under Advanced with the jargon explained. A file that still has problems asks for a second confirmation before it downloads, the cover slot accepts only a JPG or PNG, and small files are shown in KB. The e-book is no longer marked as already certified. Full test suite: 45 passed. Headless run of Das Tempelhofer Feld: author Bjoern Weigel, 63 pictures moved, 63 problems to fix (placeholder picture text) and 4 to check, including the missing certificate.
 
 A1–A3 fd67526: Spec workbook, image metadata, and decorative rules fill picture descriptions; a typed description always wins.
+
+A4–A5 2bad15b: Vision drafts (Groq/OpenRouter/any OpenAI-compatible API, key in localStorage only) with source labels, approval, and a certification hold while an AI draft is open.
