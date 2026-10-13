@@ -15,3 +15,5 @@ A4–A5 2bad15b: Vision drafts (Groq/OpenRouter/any OpenAI-compatible API, key i
 B1 ec15dbe: Each file slot has its own picker, accepts a file by extension when the type is empty, and clears a stale rejection after the right file is attached.
 
 B2 8ba5c68: Check these first and the Next warning share one review list. Automatic changes are explained and left out of that count.
+
+B3 754fe2d: The structure step always shows Update the preview, and says whether the preview is behind the choices.
