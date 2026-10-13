@@ -19,3 +19,5 @@ B2 8ba5c68: Check these first and the Next warning share one review list. Automa
 B3 754fe2d: The structure step always shows Update the preview, and says whether the preview is behind the choices.
 
 B4 dcbed87: Picture thumbnails use the image type read from the file bytes, so they are the real pictures. The caption is shown beside each description (added in 2bad15b).
+
+B5 38c62ea: Compare with the print book and Preview can be collapsed, and both start open.
