@@ -11,3 +11,5 @@ The house style screen now leads with a few plain choices, such as the kind of e
 A1–A3 fd67526: Spec workbook, image metadata, and decorative rules fill picture descriptions; a typed description always wins.
 
 A4–A5 2bad15b: Vision drafts (Groq/OpenRouter/any OpenAI-compatible API, key in localStorage only) with source labels, approval, and a certification hold while an AI draft is open.
+
+B1 ec15dbe: Each file slot has its own picker, accepts a file by extension when the type is empty, and clears a stale rejection after the right file is attached.
