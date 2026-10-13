@@ -21,3 +21,5 @@ B3 754fe2d: The structure step always shows Update the preview, and says whether
 B4 dcbed87: Picture thumbnails use the image type read from the file bytes, so they are the real pictures. The caption is shown beside each description (added in 2bad15b).
 
 B5 38c62ea: Compare with the print book and Preview can be collapsed, and both start open.
+
+B6 5960c54: The check screen and the command line now share one problem count. The screen had been adding the conversion notes on top of the quality check, so the same picture descriptions and the same ISBN were counted twice (76 on screen, 63 on the command line, which printed only the quality check). A missing cover is still counted, because measuring the placeholder image is not the same as uploading a cover.
