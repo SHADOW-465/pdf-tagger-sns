@@ -23,3 +23,13 @@ B4 dcbed87: Picture thumbnails use the image type read from the file bytes, so t
 B5 38c62ea: Compare with the print book and Preview can be collapsed, and both start open.
 
 B6 5960c54: The check screen and the command line now share one problem count. The screen had been adding the conversion notes on top of the quality check, so the same picture descriptions and the same ISBN were counted twice (76 on screen, 63 on the command line, which printed only the quality check). A missing cover is still counted, because measuring the placeholder image is not the same as uploading a cover.
+
+Final check on forge/robustness-ux, after B6 5960c54. Full test suite: 62 passed. The automation-app typecheck and production build succeeded. Nothing was pushed.
+
+Headless run of Das Tempelhofer Feld, with the print PDF and e-book ISBN 9783814803562, and no separate cover file: author Bjoern Weigel, ten chapters, 74 pictures in the package, 63 pictures moved onto the printed page of their caption. The screen and the command line both report 13 problems to fix and 65 to check.
+
+Before the shared count, the screen added the conversion notes on top of the quality check (76) and the command line printed only the quality check (63). Those 63 were mostly placeholder picture text. Sentences saved from the InDesign export are now unapproved AI drafts, so they are things to check rather than a second copy of the same error.
+
+Picture descriptions by source, with no spec workbook loaded: 61 unapproved AI drafts from the export, 12 still missing, and none from the spec, the image file, a decorative rule, or typed text. The 13 problems to fix are those 12 pictures plus the missing cover upload. The 65 to check are the 61 drafts waiting for approval, pages 98, 169 and 171 with no page marker, 33 source words not found (0.07%, mostly a contents entry whose page number was glued to the title), one paragraph indent on page 111, and the missing accessibility certificate.
+
+Still open on this book: descriptions for the 12 pictures, approval of the 61 drafts before the book can be certified, a real cover JPG or PNG, and page markers for pages 98, 169 and 171. No code tasks from A1 through B6 are left.
