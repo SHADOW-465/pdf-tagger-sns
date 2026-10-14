@@ -33,3 +33,27 @@ pdf-tagger-sns-overview.pdf
 
 # sample input/output books (~1 GB, confidential client material)
 Automation/
+
+# secrets
+.env
+.env.*
+
+# local tooling / scratch output (not product code)
+.claude/
+Outputs/
+graphify-out/
+
+# confidential client deliverables dropped in corrections/ — only the *.md status docs are tracked
+corrections/*.xlsx
+corrections/*.docx
+corrections/*.pdf
+corrections/*.epub
+corrections/*.zip
+corrections/*.jpeg
+corrections/*.jpg
+corrections/*.png
+corrections/_extract/
+corrections/_*.ps1
+corrections/_*.mjs
+corrections/_*.txt
+corrections/forge_*.txt
