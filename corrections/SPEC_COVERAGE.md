@@ -77,15 +77,15 @@ the task asks; **missing** = not implemented.
 
 | Requirement | Status | Location / why |
 |---|---|---|
-| Chapter splitting matches book TOC | **missing** | no docx→EPUB conversion exists; `.docx` is read only as spec/alt input (`spec/office.ts:readDocx`, `pdfua/altdocx.ts`) |
-| TOC/Nav/NCX matches sample | **missing** | same — no Word pipeline |
-| Page-break spans placed correctly | **missing** | same |
-| Run-on paragraphs merged with previous line | **missing** | same |
-| Lists converted | **missing** | `readDocx` extracts text only, not list structure |
-| Tables converted | **missing** | `readDocx` flattens table rows to text |
+| Chapter splitting matches book TOC | done | `wordepub/read.ts:readWordBook` (Heading/Überschrift/outline level) and `wordepub/build.ts:buildWordEpub` (a level-1 heading starts a chapter only when the manuscript’s own contents list names it; otherwise it stays an h2) |
+| TOC/Nav/NCX matches sample | done | chapter titles become `Section.nav`; `epub/package.ts:packageEpub` writes `nav.xhtml` and `toc.ncx`. Contents-styled paragraphs are not a second contents list |
+| Page-break spans placed correctly | done | `wordepub/read.ts:inlinesOf` — `w:br` page, `w:lastRenderedPageBreak`, and `w:pageBreakBefore` become an inline `pagebreak` span. A PAGE field supplies the number. DATE and TIME field results are dropped |
+| Run-on paragraphs merged with previous line | done | `wordepub/read.ts` (`run on` / `noindent` / a lowercase continuation) and `wordepub/build.ts` joins that paragraph onto the previous line |
+| Lists converted | done | `w:numPr` plus `numbering.xml` → `ul` / `ol` in `wordepub/build.ts` |
+| Tables converted | done | `w:tbl` → `table`/`thead`/`th` in `wordepub/build.ts` (header row from `w:tblHeader` or a bold first row) |
 
-> The current product expects a Word manuscript to be converted via its **print PDF** (`ui/PdfFlow.tsx`
-> comment). The task asks for direct `.docx` input using heading styles — **this is Step 2 work.**
+> A `.docx` on the PDF or Word screen is the manuscript (`ui/PdfFlow.tsx`). `spec/office.ts:readDocx` is
+> still the plain-text reader for a requirements file, not the manuscript.
 
 ## F. Accessible-PDF (PDF/UA) defect list + PAC reports
 
@@ -144,7 +144,7 @@ the task asks; **missing** = not implemented.
   stored as `es-mx` and wins for a Mexican book. The tag-sample sheet is not mistaken for the matrix.
 - epub:type/section and a11y metadata are still profile-driven, not their own tunable rules (rows C "partly").
 
-**Step 2 — PDF/Word→EPUB (reviewed through step 2a only):**
+**Step 2 — PDF/Word→EPUB:**
 - PDF→EPUB language is read from the text (`lang.ts:languageFromBook`, used in `pdfepub/analyze.ts`).
   A region tag in the PDF Info dictionary is kept when the text agrees (the Weigel print PDF's Info
   language is `de-DE`). A tag that clearly disagrees with the text is not kept. XMP `dc:language` is
@@ -154,10 +154,14 @@ the task asks; **missing** = not implemented.
   and `role="presentation"`. A long description is written with `aria-describedby`, including on a
   front-matter picture. The picture step shows the source and does not store a resolved description
   as if the reviewer had typed it.
-- Still open in Step 2: the PDF screen has no AI-description button and no control that loads a
-  spec-sheet picture list (the engine accepts `pictures` already). Direct Word (`.docx`) → EPUB
-  does not exist (row E).
-- The PDF build runs the same checker (`checkEpub`).
+- The PDF screen drafts missing descriptions with the same vision model as InDesign
+  (`epub/alt-ai.ts:draftPictureAlts`, key only from Settings). A draft stays unapproved until the
+  reviewer accepts it (`pdfepub/build.ts:pdfPictureAlt`). “Load picture descriptions” reads the spec
+  sheet (`spec/requirements.ts:pictureAltsFromWorkbook`). Typed text still wins, then the sheet.
+  An open draft blocks the certification fields and is stripped from the package.
+- A Word manuscript is built by `wordepub/build.ts:buildWordEpub` (row E). The print PDF remains the
+  source when no `.docx` is attached.
+- The PDF build and the Word build both run the same checker (`checkEpub`), including `pendingAi`.
 
 **Step 3 — PDF/UA:**
 - **Table tagging missing**, **per-element `/Lang` missing**, **footnote→reference linking missing**,
