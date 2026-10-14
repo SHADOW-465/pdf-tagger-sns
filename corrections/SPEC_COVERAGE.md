@@ -93,20 +93,20 @@ the task asks; **missing** = not implemented.
 |---|---|---|
 | Real tagged PDF (`/StructTreeRoot`, `/MarkInfo /Marked true`) | done | `pdfua/write.ts:writeUa` |
 | Structure elements P, H1–H6, Figure, L/LI, Note, TOC, Caption | done | `pdfua/structure.ts:buildStructure` |
-| **Table/TR/TD/TH structure** | **missing** | no table tagging in `pdfua/*` — tabular data tagged as plain paragraphs |
+| Table/TR/TD/TH structure | done | `pdf/tables.ts:detectTables`; header cells are TH with `/Scope` (and RowSpan/ColSpan when the cell spans) in `pdfua/write.ts` |
 | Reading order | done | `pdfua/structure.ts` (columns, XY-cut) + MCID assignment `write.ts` |
 | Alt text on figures (`/Alt`), missing-alt blocks export | done | `pdfua/write.ts`; alt from `pdfua/altdocx.ts:matchAlt` + reviewer/AI |
-| Alt via the **same layered system** as InDesign | **missing** | PDF/UA alt is its own path, not `epub/alt.ts` layers (spec→meta→decorative→AI) |
+| Alt via the same layered system as InDesign | done | `pdfua/index.ts:figureChoice` — typed, then spec sheet, then file text, then a decorative mark, then an unapproved AI draft |
 | Document `/Lang` + XMP dc:language | done | `pdfua/write.ts` (`setLanguage`, XMP) |
-| **Per-element `/Lang`** | **missing** | no StructElem carries `/Lang` |
+| Per-element `/Lang` | done | `pdfua/write.ts` sets `/Lang` when `lang.ts:confidentLanguage` differs from the document’s two-letter language |
 | Bookmarks / `/Outlines` + `PageMode UseOutlines` | done | `pdfua/write.ts` outline build |
 | Title in docinfo + XMP + `DisplayDocTitle true` | done | `pdfua/write.ts`; verified `pdfua/check.ts` |
 | Artifacts for headers/footers/page numbers/slug | done | `pdfua/write.ts` (untagged margin content, slug→null owner) |
 | Figure + caption in order | done | `pdfua/structure.ts` figure/caption pairing |
-| **Notes linked to their reference marks** | **missing** | Note elements created but no Note↔reference link/back-link |
-| Decorative image → `/Artifact` | partly | decorative figures are dropped, not marked `/Artifact` |
+| Notes linked to their reference marks | done | `pdfua/write.ts` — Reference > Link on the note number, Dest to the note, back-link, Note `/ID` `note-{page}-{id}` |
+| Decorative image → `/Artifact` | done | `pdfua/index.ts` drops the Figure and clears line ownership; unowned paints are `/Artifact BMC` in `pdfua/content.ts` |
 | Internal Matterhorn-style checker | done | `pdfua/check.ts:checkUa` |
-| **Validate with veraPDF / open checker** | **missing** | veraPDF not present; PAC is a manual step. (Step 3 asks to try veraPDF locally) |
+| Validate with veraPDF / open checker | missing | veraPDF is not installed (Java 8 is). The two PAC reports are one-page summaries, not Matterhorn line items. Manual conversion passes PDF/UA-1; the tool-converted file fails (2,643 PDF-syntax failures, 1 structure element, 2 metadata). PAC was not re-run on a file this tool wrote. |
 
 ## G. Quality checker (honest) — shared by both EPUB flows
 
@@ -163,13 +163,17 @@ the task asks; **missing** = not implemented.
   source when no `.docx` is attached.
 - The PDF build and the Word build both run the same checker (`checkEpub`), including `pendingAi`.
 
-**Step 3 — PDF/UA:**
-- **Table tagging missing**, **per-element `/Lang` missing**, **footnote→reference linking missing**,
-  decorative→`/Artifact` only partial.
-- **No open-checker validation** — try veraPDF locally and record honest results.
+**Step 3 — PDF/UA (implemented; not PAC-certified):**
+- Tables, per-element `/Lang`, note reference links, and decorative `/Artifact` are written.
+  Covered by `test/pdfua-a11y.test.ts`.
+- veraPDF is not on this machine, so no PDF/UA profile run. The client PAC summaries stay the
+  target: the manual Gladiators file passes; the tool-converted file fails, mostly on PDF syntax.
+  Those reports do not list Matterhorn checkpoint ids, and PAC has not been run on this tool’s output.
 
-**Step 4 — UX bugs:** picture thumbnails rendering as grey placeholders (blob/object URL, MIME, CSP,
-revoke timing); layout at 1280px width (Accept button area — see task). *(Not a spec-doc item; from UX report.)*
+**Step 4 — UX bugs (fixed):** picture thumbnails take their MIME from the bytes, and a zip entry is
+copied before it becomes a blob, so a PNG stored as `.jpg` paints. At 1280 and 1366 the Structure
+Next button and “Accept this spec and continue” sit inside the viewport, and the page does not
+scroll sideways. Checked in a browser on the InDesign flow, including with rule examples open.
 
 **Needs a client answer (cannot resolve from samples):**
 - Which localized labels / a11y-metadata values the client wants client-tunable vs fixed (Step 1 scope).
