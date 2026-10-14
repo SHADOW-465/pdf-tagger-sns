@@ -57,3 +57,4 @@ corrections/_*.ps1
 corrections/_*.mjs
 corrections/_*.txt
 corrections/forge_*.txt
+corrections/forge_*.log

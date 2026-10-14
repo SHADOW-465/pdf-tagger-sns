@@ -31,7 +31,7 @@ the task asks; **missing** = not implemented.
 | aria-label on Title / Author / Publisher | done | front-matter render, `indesign/front.ts` + locale labels |
 | `img alt` default + decorative label per language | done | `epub/locale.ts` (`imageAlt`/`decorativeAlt`); applied in alt settle |
 | Label table for de/fr/es/it/pt (+ more) | done | `epub/locale.ts:TABLE` (de/fr/es/it/pt/en/nl/pl/sv/da/tr/ru/el/ar/he) |
-| Localized labels tunable per client (layered rule) | **missing** | labels live in `settings.labels` but no rule in `spec/rules.ts` exposes them to the client→series→book layers / spec workbook |
+| Localized labels tunable per client (layered rule) | done | `spec/requirements.ts:labelsFromWorkbook` → `spec/session.ts:applyLabels` → `Layer.labels` in `spec/layers.ts:resolve` → `epub/locale.ts:labelsFor`. A second region stays on its own tag (`es-mx`), so the Spanish column does not replace the Mexican cover and title-page words |
 
 ## B. Standard-EPUB tag templates
 
@@ -137,17 +137,27 @@ the task asks; **missing** = not implemented.
 
 ## Gaps mapped to the task steps
 
-**Step 1 — InDesign→EPUB missing spec requirements, wired as rules (not hardcoded):**
-- Localized a11y labels, nav/landmarks, epub:type/section, and a11y metadata are produced correctly
-  but are **profile/settings-driven, not client-tunable rules** (rows A, C "partly"). Expose the ones
-  that matter as layered rules + spec-workbook columns.
+**Step 1 — InDesign→EPUB language sheet (reviewed):**
+- The client's language workbook (`Major-Languages-Naming`) loads as layered label overrides.
+  Concepts on that sheet (page, chapter, contents, landmarks, cover, title page, start reading,
+  title/author/publisher, image, decorative) map onto `locale.ts`. `es-ES` fills `es`; `es-MX` is
+  stored as `es-mx` and wins for a Mexican book. The tag-sample sheet is not mistaken for the matrix.
+- epub:type/section and a11y metadata are still profile-driven, not their own tunable rules (rows C "partly").
 
-**Step 2 — PDF/Word→EPUB robustness (biggest gap):**
-- PDF→EPUB alt text **not wired to the layered alt system** (spec/metadata/decorative/AI-draft) — row F.
-- PDF→EPUB **language is hardcoded `en`** (no text detection) — row C of §PDF.
-- **Word `.docx`→EPUB does not exist** — headings-as-styles, lists, tables, run-on merge, page markers,
-  TOC/nav (row E). Follow `Word-EPUB-Automation-Update`.
-- Must run the same checker/report (already shared via `checkEpub`).
+**Step 2 — PDF/Word→EPUB (reviewed through step 2a only):**
+- PDF→EPUB language is read from the text (`lang.ts:languageFromBook`, used in `pdfepub/analyze.ts`).
+  A region tag in the PDF Info dictionary is kept when the text agrees (the Weigel print PDF's Info
+  language is `de-DE`). A tag that clearly disagrees with the text is not kept. XMP `dc:language` is
+  not read; this file has none.
+- PDF→EPUB alt text uses `pdfepub/build.ts:pdfPictureAlt` (typed, then spec row, then image-file
+  metadata, then a decorative rule). A caption is not reused. Decorative pictures get an empty alt
+  and `role="presentation"`. A long description is written with `aria-describedby`, including on a
+  front-matter picture. The picture step shows the source and does not store a resolved description
+  as if the reviewer had typed it.
+- Still open in Step 2: the PDF screen has no AI-description button and no control that loads a
+  spec-sheet picture list (the engine accepts `pictures` already). Direct Word (`.docx`) → EPUB
+  does not exist (row E).
+- The PDF build runs the same checker (`checkEpub`).
 
 **Step 3 — PDF/UA:**
 - **Table tagging missing**, **per-element `/Lang` missing**, **footnote→reference linking missing**,
