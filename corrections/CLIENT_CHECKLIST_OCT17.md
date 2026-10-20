@@ -4,13 +4,13 @@ Branch `forge/combined` (merge of `forge/epub-dynamic` and `forge/pdfua-fixes`).
 Status words: **fixed** (changed, tested, checked on the real book), **partial** (changed, with a stated gap), **not** (not done).
 
 Commits: `d5a5519`, `e83582b`, `b628a35`, `a35b3ba` (earlier PDF/UA work), `31ae0f7` (this round: figures, index, image list), `d11459b` (Word to EPUB), `825929e` (merge).
-Tests on the merged branch: **127 run, 127 pass, 0 skipped** (`npm test`, includes the Gladiators and Medium PDF builds and EPUBCheck 5.4.0 on the Word test book).
+Tests on the merged branch: **127 run, 127 pass, 0 skipped** (re-run after the Cambia change) (`npm test`, includes the Gladiators and Medium PDF builds and EPUBCheck 5.4.0 on the Word test book).
 
 ## What was and was not checked
 
 - `pdf_a` and `pdf_b` are the same book (*Gladiators in the Greek World*): the five screenshots in `pdf_b` are repeats of `pdf_a` 1 to 5. Both were treated as one list.
 - The tag tree below is read back with pdf.js (`test/read-tags.ts`), the way assistive technology reads it, from a fresh build of `Simple/Input` (361 pages). No Acrobat and no PAC run was done overnight, so the Acrobat tag panel and the PAC report are still to be looked at by a person.
-- **The Cambia tu mente Word manuscript (.docx) is not on this machine.** The client's screenshots show an older tool output (`sec.xhtml`, `sec2.xhtml` …) and a hand-made reference. The Word items were rebuilt as synthetic Word files that have the same shape; they have not been run on the real manuscript.
+- Cambia tu mente is an InDesign book; it was run on the real files (see its section). The Word engine has only synthetic tests, because no Word manuscript of it exists on this machine.
 
 ## PDF A and PDF B (Gladiators)
 
@@ -28,23 +28,25 @@ Tests on the merged branch: **127 run, 127 pass, 0 skipped** (`npm test`, includ
 | A10 | List tag structure L / LI / Lbl / LBody | **fixed** | `e83582b`. 693 `Lbl` lines in the tree. p61: `Lbl: •`, `LBody: Lysimachos was a Thessalian general…`. Test `a list marker is split into Lbl…`. Also `31ae0f7`: a wrapped line that is flush with its paragraph no longer splits it (the "Front Cover: … Found / in Kibyra." note on p16 is one paragraph, p61 prose is no longer one P per line). |
 | A11 | Index reading order not tagged properly (one P per entry) | **fixed** | `31ae0f7`. Left column, middle, right; one `P` per entry, turnover lines kept with their entry, sub-entries apart. p338: `P: Abdera, 55`, `P: Achaea (province), 60, 305n.129`, `P: Agora, 35–7, 45, 70, 183, 265`, `P: of Aphrodisias (south), 149`. Tests `an index: one paragraph per entry…`, `Simple…`. Index rule is limited to a section whose heading reads as an index. |
 
-## Word to EPUB (Cambia tu mente, `word_epub.txt` / `img_word_epub`)
+## Word to EPUB (Cambia tu mente, `word_epub.txt` / `img_word_epub`), checked on the real book
 
-The client's test file is dated 29 Sep; the Word engine (`cbe305a`, 14 Oct) already fixed the first points. The rest is `d11459b`. All checked only on synthetic Word files (see above).
+Correction to my earlier note: Cambia is an InDesign package, so the matching flow is InDesign to EPUB, not the Word engine. The real book (`Input/88228-02 Cambia tu mente.zip` + print PDF + cover, ISBN 9791388228261) was run with `test/run-indd.ts` and compared with the client's hand-finished `Output/Cambia tu mente.epub`. Result: **EPUBCheck 5.4.0, 0 fatals / 0 errors / 0 warnings / 0 infos**; in-app check 57,375 of 57,375 words present, 243 page markers. The Word engine work (`d11459b`) stays as a separate, synthetic-tested feature for real Word manuscripts.
 
-| # | Client markup | Status | Evidence |
+| # | Client markup | Status | Evidence on the real book |
 |---|---|---|---|
-| W1 | File list: tool made `sec.xhtml`…`sec5.xhtml`, the reference has `part1-3`, `chapter01-11`, `intro`, `list`… | **partial** | A heading starts its own file when the book's contents names it, at heading level 1 or 2, so a Heading-2 chapter under a Heading-1 part is no longer folded into the part. Front and back matter get `intro`, `ata`, `bib`, `concl`… as before. A "PRIMERA PARTE Title" heading is now recognised as a part (`part.xhtml`; `locale.ts`). Test `Word, Cambia shape…`: files `toc, intro, part, chapter01, chapter02`. Gap: the file for a second part is `part2`, not the reference's `part1`/`part2` pair numbering from 1; and no real manuscript was run. |
-| W2 | Contents page: not linked, wrapped lines, leaders and page numbers as text (`TOC-2` lines, "c apítulo 9") | **fixed** (synthetic) | The contents list is read at every level; an entry wrapped over several lines becomes one entry without dot leaders or page number; the book gets a contents page (`toc.xhtml`, `doc-toc`) with `toc_1`, `toc_1a`, `toc_2` entries that link to their files. Test checks `<a href="chapter01.xhtml">Capítulo 1.` and no `...` or page numbers. An entry that matches no section is listed in the review. |
-| W3 | Page marker split a paragraph; stray "1/9/26 15:00" text | **fixed** (before this round, `cbe305a`) | Test `Word chapters follow the contents list…`: the `pagebreak` span stays inside the paragraph, `1/9/26` and `15:00` are gone. Re-checked in the full suite. |
-| W4 | Bullets typed as "•" inside one paragraph (class `extractt`) instead of a list | **fixed** (synthetic) | Lines that start with a bullet glyph, one paragraph each or joined by line breaks, become `<ul><li>`. A dash or asterisk is not taken as a bullet (dialogue, note marks "* Bethune"). Test checks `<ul><li>El 84 por ciento…` and no `•` left. |
-| W5 | Table on printed p160 (checklist, circled): header and caption | **partial** | Table cells are real `th`/`td`; the first row is a header when it is flagged, all bold, or shaded above unshaded rows; a short bold line right above the table becomes its `<caption>`. I could not see what the client circled in the question column, so that part is not confirmed. |
-| W6 | Printed page number 160 circled | **not confirmed** | The builder takes page numbers from the Word `PAGE` fields. I do not know what was wrong with 160. Needs the manuscript. |
-| W7 | Produced EPUB valid | **fixed** for the test book | EPUBCheck 5.4.0 on the built Word EPUB in the test: 0 errors. The real Cambia Word file was not run. |
+| W1 | File naming (`part1-3`, `chapterNN`, `intro`, `list`…) | **fixed** | File lists of our EPUB and the reference are identical (27 content files: `app ata bib chapter01-11 concl copyright cover ded glos halftitle intro list nav part1-3 title toc`). |
+| W2 | Contents page | **fixed** (one difference removed) | `toc.xhtml` has every entry linked (`toc_1`, `toc_1a`, `toc_2`) as in the reference. One real difference: chapter titles with two small-caps runs were two `<span>`s with a space between (`DESPROGRAMAR</span> <span class="small-caps">LA MENTE`); now one span, as the reference. Change in `indesign/inline.ts` (small-caps runs join across one space). |
+| W3 | Page marker inside a paragraph, no stray date text | **fixed** | `page-14` sits inside its list item in `intro.xhtml` as in the reference; no date or time text anywhere. |
+| W4 | Bullets as a list | **fixed** | `intro.xhtml`: `<ul class="bull"><li>El 84 por ciento…</li>` ×7, the page marker inside the last `li`, as the reference. Difference left, by client setting: our note call is `<sup><a epub:type="noteref">*</a></sup>`, the reference has the bare `<a>` (the `sup` template is the BeBra client's requirement; Cambia has no client layer shipped). |
+| W5 | Table on printed p160 | **fixed** | `chapter08.xhtml` after `page-160`: same 10/10/80 % `colgroup`, same five question rows and wording as the reference. Ours is better: the first row is a `<thead>` with `<th scope="col">` (the reference has `td`). Small differences left: empty cells are `<td></td>` (same meaning as `<td/>`), and two cells carry a variant class (`No-Table-Style2/3`). The two lines under the table ("Sí = 1 punto", "Suma tus puntuaciones:") are `p.indent` here, `p.table-txt`/`table-txt1` in the reference, and the answer list is a `blockquote` with `extract1` against a `div.top` with `extract`: they follow the print paragraph styles' class names, which only the client's own style map can give. |
+| W6 | Printed page number 160 | **fixed** | `<span … id="page-160" role="doc-pagebreak" title="página 160"/>` before "Estas respuestas escritas…", same place as the reference. The in-app check notes only printed page 255 with no marker (a blank page). |
+| W7 | Valid EPUB | **fixed** | EPUBCheck 0 errors, as above. |
+
+Other differences against the reference seen in the line diff (not on the client's list, left alone): footnotes are wrapped in `div.footnotes` with an `hr` instead of `p.foot-line`; the first paragraph after the list is `Texto_BLANCA-ANTES`; the in-app check lists five paragraphs (p65, 168, 171, 183, 220) with a first-line indent that print does not have.
 
 ## Open decisions
 
 1. FSC/publisher logos are now Figures with alt typed by the reviewer. If you prefer them as decoration by default, pass `logos: 'artifact'` in the client's `ua` options.
 2. Chapters are H2 under a title H1 (the client's "global change"). A client that wants H1 chapters sets `chapterLevel: 1`.
-3. Send the Cambia Word manuscript and the client's hand-made EPUB: W1, W5 and W6 can only be closed on the real file.
+3. Cambia's paragraph-style class names (`table-txt`, `div.top`, `extract`) and the bare note call need a client style map for Cambia, like the BeBra one; say if you want it written from the reference EPUB.
 4. An Acrobat/PAC look at the Gladiators output is still needed for A8 (path tags) before you call it done.
